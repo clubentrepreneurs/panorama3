@@ -22,6 +22,7 @@
       font-weight: bold;
       pointer-events: none;
       transform: translate(-50%, -100%);
+      z-index: 2;
     }
   </style>
 </head>
@@ -29,7 +30,7 @@
   <canvas id="renderCanvas"></canvas>
   <div id="overlay">4 incontournables</div>
 
-  <!-- Babylon.js CDN -->
+  <!-- Babylon.js -->
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 
@@ -38,11 +39,10 @@
     const overlay = document.getElementById("overlay");
     const engine = new BABYLON.Engine(canvas, true);
 
-    const createScene = async () => {
+    async function createScene() {
       const scene = new BABYLON.Scene(engine);
-      scene.clearColor = new BABYLON.Color4(0, 0, 0, 1);
 
-      // Caméra contrôlable pour zoom/pan sur le .glb
+      // Caméra pour observer le modèle .glb sans affecter le fond
       const camera = new BABYLON.ArcRotateCamera("camera",
         Math.PI / 2, Math.PI / 2.5, 5,
         new BABYLON.Vector3(0, 0, 0), scene);
@@ -50,33 +50,40 @@
       camera.wheelPrecision = 30;
       camera.minZ = 0.1;
 
-      // Lumière de base
+      // Lumière
       const light = new BABYLON.HemisphericLight("light",
         new BABYLON.Vector3(0, 1, 0), scene);
       light.intensity = 1;
 
-      // Panorama en arrière-plan fixe
-      const background = new BABYLON.Layer("panoramaLayer", null, scene, true);
-      const panoramaTexture = new BABYLON.Texture("panthere.png", scene, true, false);
-      panoramaTexture.uAng = Math.PI; // Corriger orientation
-      background.texture = panoramaTexture;
-      background.isBackground = true;
+      // Créer la sphère pour le panorama
+      const skybox = BABYLON.MeshBuilder.CreateSphere("skybox", {
+        segments: 64,
+        diameter: 1000,
+        sideOrientation: BABYLON.Mesh.BACKSIDE
+      }, scene);
 
-      // Charger le .glb
-      let modelRoot = null;
+      const skyMat = new BABYLON.StandardMaterial("skyMat", scene);
+      skyMat.diffuseTexture = new BABYLON.Texture("panthere.png", scene);
+      skyMat.diffuseTexture.uAng = Math.PI; // Corriger l'orientation
+      skyMat.specularColor = new BABYLON.Color3(0, 0, 0);
+      skyMat.backFaceCulling = false;
+      skybox.material = skyMat;
+
+      // Charger le modèle .glb
+      let model;
       await BABYLON.SceneLoader.ImportMeshAsync("", "./", "socleetoiletoque.glb", scene).then(result => {
-        modelRoot = result.meshes[0];
-        modelRoot.position = new BABYLON.Vector3(0, -1, 0);
-        modelRoot.scaling = new BABYLON.Vector3(2, 2, 2);
-        modelRoot.rotation = new BABYLON.Vector3(0, Math.PI, 0);
+        model = result.meshes[0];
+        model.position = new BABYLON.Vector3(0, -1, 0);
+        model.scaling = new BABYLON.Vector3(2, 2, 2);
+        model.rotation = new BABYLON.Vector3(0, Math.PI, 0);
       });
 
-      // Animation de l'overlay texte
+      // Suivi de la position du modèle pour l'overlay
       scene.onAfterRenderObservable.add(() => {
-        if (!modelRoot) return;
+        if (!model) return;
 
         const pos = BABYLON.Vector3.Project(
-          modelRoot.getBoundingInfo().boundingSphere.centerWorld,
+          model.getBoundingInfo().boundingSphere.centerWorld,
           BABYLON.Matrix.Identity(),
           scene.getTransformMatrix(),
           camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
@@ -87,7 +94,7 @@
       });
 
       return scene;
-    };
+    }
 
     createScene().then(scene => {
       engine.runRenderLoop(() => scene.render());
