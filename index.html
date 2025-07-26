@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Panorama 360° + Modèle GLB</title>
+  <title>Panorama 360° + Modèle GLB Zoomable</title>
   <style>
     html, body {
       margin: 0;
@@ -32,39 +32,32 @@
       const scene = new BABYLON.Scene(engine);
       scene.clearColor = new BABYLON.Color4(0, 0, 0, 1);
 
-      // Caméra orbitale pour explorer
+      // Caméra principale : orbit autour du modèle .glb
       const camera = new BABYLON.ArcRotateCamera("camera",
-        Math.PI / 2, Math.PI / 2.2, 5,
-        BABYLON.Vector3.Zero(), scene);
+        Math.PI / 2, Math.PI / 2.5, 5,
+        new BABYLON.Vector3(0, 0, 0), scene);
       camera.attachControl(canvas, true);
-      camera.wheelPrecision = 50;
+      camera.wheelPrecision = 30; // Sensibilité du zoom
       camera.minZ = 0.1;
 
-      // Lumière
+      // Lumière de base
       const light = new BABYLON.HemisphericLight("light",
         new BABYLON.Vector3(0, 1, 0), scene);
       light.intensity = 1;
 
-      // Crée la sphère panoramique à l'endroit
-      const sphere = BABYLON.MeshBuilder.CreateSphere("panorama", {
-        diameter: 1000,
-        segments: 64
-      }, scene);
-      sphere.scaling.x = -1; // Vue intérieure
+      // Créer le panorama dans une scène indépendante (pas affecté par la caméra)
+      const background = new BABYLON.Layer("panoramaLayer", null, scene, true);
+      const panoramaTexture = new BABYLON.Texture("panthere.png", scene, true, false);
+      panoramaTexture.uAng = Math.PI; // Corriger l'orientation
+      background.texture = panoramaTexture;
+      background.isBackground = true;
 
-      const panoTexture = new BABYLON.Texture("panthere.png", scene);
-      const panoMaterial = new BABYLON.StandardMaterial("panoMat", scene);
-      panoMaterial.diffuseTexture = panoTexture;
-      panoMaterial.diffuseTexture.uAng = Math.PI; // Inverser horizontalement
-      panoMaterial.backFaceCulling = false;
-      sphere.material = panoMaterial;
-
-      // Charger et positionner le modèle GLB
+      // Charger le modèle .glb (zoomable)
       await BABYLON.SceneLoader.ImportMeshAsync("", "./", "socleetoiletoque.glb", scene).then(result => {
         const modelRoot = result.meshes[0];
         modelRoot.position = new BABYLON.Vector3(0, -1, 0);
-        modelRoot.scaling = new BABYLON.Vector3(2, 2, 2); // Agrandir
-        modelRoot.rotation = new BABYLON.Vector3(0, Math.PI, 0); // Retourner si nécessaire
+        modelRoot.scaling = new BABYLON.Vector3(2, 2, 2);
+        modelRoot.rotation = new BABYLON.Vector3(0, Math.PI, 0);
       });
 
       return scene;
