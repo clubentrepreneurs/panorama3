@@ -62,8 +62,11 @@
         sideOrientation: BABYLON.Mesh.BACKSIDE
       }, scene);
 
+      // ✅ Correction orientation
+      panorama.rotation.y = Math.PI;
+
       const panoMaterial = new BABYLON.StandardMaterial("panoMat", scene);
-      panoMaterial.diffuseTexture = new BABYLON.Texture("test.png", scene);
+      panoMaterial.diffuseTexture = new BABYLON.Texture("panthere.png", scene);
       panoMaterial.diffuseTexture.coordinatesMode = BABYLON.Texture.FIXED_EQUIRECTANGULAR_MODE;
       panoMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
       panoMaterial.backFaceCulling = false;
