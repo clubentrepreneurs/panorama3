@@ -42,7 +42,7 @@
     async function createScene() {
       const scene = new BABYLON.Scene(engine);
 
-      // Caméra pour observer le modèle .glb sans affecter le fond
+      // Caméra orbitale centrée sur le modèle
       const camera = new BABYLON.ArcRotateCamera("camera",
         Math.PI / 2, Math.PI / 2.5, 5,
         new BABYLON.Vector3(0, 0, 0), scene);
@@ -55,21 +55,21 @@
         new BABYLON.Vector3(0, 1, 0), scene);
       light.intensity = 1;
 
-      // Créer la sphère pour le panorama
-      const skybox = BABYLON.MeshBuilder.CreateSphere("skybox", {
+      // Sphère panoramique pour le background
+      const panorama = BABYLON.MeshBuilder.CreateSphere("panorama", {
         segments: 64,
         diameter: 1000,
         sideOrientation: BABYLON.Mesh.BACKSIDE
       }, scene);
 
-      const skyMat = new BABYLON.StandardMaterial("skyMat", scene);
-      skyMat.diffuseTexture = new BABYLON.Texture("panthere.png", scene);
-      skyMat.diffuseTexture.uAng = Math.PI; // Corriger l'orientation
-      skyMat.specularColor = new BABYLON.Color3(0, 0, 0);
-      skyMat.backFaceCulling = false;
-      skybox.material = skyMat;
+      const panoMaterial = new BABYLON.StandardMaterial("panoMat", scene);
+      panoMaterial.diffuseTexture = new BABYLON.Texture("panthere.png", scene);
+      panoMaterial.diffuseTexture.coordinatesMode = BABYLON.Texture.FIXED_EQUIRECTANGULAR_MODE;
+      panoMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+      panoMaterial.backFaceCulling = false;
+      panorama.material = panoMaterial;
 
-      // Charger le modèle .glb
+      // Chargement du modèle .glb
       let model;
       await BABYLON.SceneLoader.ImportMeshAsync("", "./", "socleetoiletoque.glb", scene).then(result => {
         model = result.meshes[0];
@@ -78,7 +78,7 @@
         model.rotation = new BABYLON.Vector3(0, Math.PI, 0);
       });
 
-      // Suivi de la position du modèle pour l'overlay
+      // Overlay qui suit la position du modèle
       scene.onAfterRenderObservable.add(() => {
         if (!model) return;
 
