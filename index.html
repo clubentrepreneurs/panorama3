@@ -1,27 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <title>Panorama + GLB + Overlay</title>
   <style>
     html, body {
       margin: 0;
-      padding: 0;
       overflow: hidden;
       width: 100%;
       height: 100%;
     }
-    #renderCanvas {
+    canvas {
       width: 100%;
       height: 100%;
-      touch-action: none;
+      display: block;
     }
     #overlay {
       position: absolute;
       color: white;
       font-size: 24px;
+      font-weight: bold;
       pointer-events: none;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -100%);
+      z-index: 2;
     }
   </style>
 </head>
@@ -29,68 +30,76 @@
   <canvas id="renderCanvas"></canvas>
   <div id="overlay">4 incontournables</div>
 
-  <!-- BabylonJS CDN -->
+  <!-- Babylon.js -->
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
-  <script src="https://cdn.babylonjs.com/loaders/babylon.glTF2FileLoader.min.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 
   <script>
-    // Setup Babylon
     const canvas = document.getElementById("renderCanvas");
+    const overlay = document.getElementById("overlay");
     const engine = new BABYLON.Engine(canvas, true);
-    const scene = new BABYLON.Scene(engine);
 
-    // Camera
-    const camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2.5, 10, BABYLON.Vector3.Zero(), scene);
-    camera.attachControl(canvas, true);
-    camera.lowerRadiusLimit = 2;
-    camera.upperRadiusLimit = 50;
+    async function createScene() {
+      const scene = new BABYLON.Scene(engine);
 
-    // Lighting
-    const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-    light.intensity = 1;
+      // Caméra orbitale centrée sur le modèle
+      const camera = new BABYLON.ArcRotateCamera("camera",
+        Math.PI / 2, Math.PI / 2.5, 5,
+        new BABYLON.Vector3(0, 0, 0), scene);
+      camera.attachControl(canvas, true);
+      camera.wheelPrecision = 30;
+      camera.minZ = 0.1;
 
-    // Panorama Sphere
-    const panorama = BABYLON.MeshBuilder.CreateSphere("panorama", {
-      segments: 64,
-      diameter: 1000,
-      sideOrientation: BABYLON.Mesh.BACKSIDE
-    }, scene);
+      // Lumière
+      const light = new BABYLON.HemisphericLight("light",
+        new BABYLON.Vector3(0, 1, 0), scene);
+      light.intensity = 1;
 
-    // Correct orientation
-    panorama.rotation.y = Math.PI;
+      // Sphère panoramique pour le background
+      const panorama = BABYLON.MeshBuilder.CreateSphere("panorama", {
+        segments: 64,
+        diameter: 1000,
+        sideOrientation: BABYLON.Mesh.BACKSIDE
+      }, scene);
 
-    const panoMaterial = new BABYLON.StandardMaterial("panoMat", scene);
-    panoMaterial.diffuseTexture = new BABYLON.Texture("panthere.png", scene);
-    panoMaterial.diffuseTexture.coordinatesMode = BABYLON.Texture.FIXED_EQUIRECTANGULAR_MODE;
-    panoMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
-    panoMaterial.backFaceCulling = false;
+      const panoMaterial = new BABYLON.StandardMaterial("panoMat", scene);
+      panoMaterial.diffuseTexture = new BABYLON.Texture("test.png", scene);
+      panoMaterial.diffuseTexture.coordinatesMode = BABYLON.Texture.FIXED_EQUIRECTANGULAR_MODE;
+      panoMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+      panoMaterial.backFaceCulling = false;
+      panorama.material = panoMaterial;
 
-    panorama.material = panoMaterial;
+      // Chargement du modèle .glb
+      let model;
+      await BABYLON.SceneLoader.ImportMeshAsync("", "./", "socleetoiletoque.glb", scene).then(result => {
+        model = result.meshes[0];
+        model.position = new BABYLON.Vector3(0, -1, 0);
+        model.scaling = new BABYLON.Vector3(2, 2, 2);
+        model.rotation = new BABYLON.Vector3(0, Math.PI, 0);
+      });
 
-    // Load GLB Model
-    BABYLON.SceneLoader.ImportMesh("", "./", "socleetoiletoque.glb", scene, function (meshes) {
-      const model = meshes[0];
+      // Overlay qui suit la position du modèle
+      scene.onAfterRenderObservable.add(() => {
+        if (!model) return;
 
-      // Optional: scale and position
-      model.scaling = new BABYLON.Vector3(2, 2, 2);
-      model.position = new BABYLON.Vector3(0, 0, 0);
-
-      // Track overlay to model
-      const overlay = document.getElementById("overlay");
-      scene.registerBeforeRender(function () {
         const pos = BABYLON.Vector3.Project(
           model.getBoundingInfo().boundingSphere.centerWorld,
-          BABYLON.Matrix.IdentityReadOnly,
+          BABYLON.Matrix.Identity(),
           scene.getTransformMatrix(),
           camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
         );
-        overlay.style.left = pos.x + "px";
-        overlay.style.top = pos.y + "px";
-      });
-    });
 
-    engine.runRenderLoop(() => scene.render());
-    window.addEventListener("resize", () => engine.resize());
+        overlay.style.left = `${pos.x}px`;
+        overlay.style.top = `${pos.y}px`;
+      });
+
+      return scene;
+    }
+
+    createScene().then(scene => {
+      engine.runRenderLoop(() => scene.render());
+      window.addEventListener("resize", () => engine.resize());
+    });
   </script>
 </body>
 </html>
