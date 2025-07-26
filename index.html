@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Panorama 360° + GLB avec Babylon.js</title>
+  <title>Panorama 360° + Modèle GLB</title>
   <style>
     html, body {
       margin: 0;
@@ -25,7 +25,6 @@
   <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 
   <script>
-    // Création de la scène Babylon
     const canvas = document.getElementById("renderCanvas");
     const engine = new BABYLON.Engine(canvas, true);
 
@@ -33,45 +32,47 @@
       const scene = new BABYLON.Scene(engine);
       scene.clearColor = new BABYLON.Color4(0, 0, 0, 1);
 
-      // Caméra orbitale libre
-      const camera = new BABYLON.ArcRotateCamera("camera", Math.PI, Math.PI / 2, 2, BABYLON.Vector3.Zero(), scene);
+      // Caméra orbitale pour explorer
+      const camera = new BABYLON.ArcRotateCamera("camera",
+        Math.PI / 2, Math.PI / 2.2, 5,
+        BABYLON.Vector3.Zero(), scene);
       camera.attachControl(canvas, true);
-      camera.wheelPrecision = 100; // Zoom doux
+      camera.wheelPrecision = 50;
       camera.minZ = 0.1;
 
       // Lumière
-      const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
+      const light = new BABYLON.HemisphericLight("light",
+        new BABYLON.Vector3(0, 1, 0), scene);
       light.intensity = 1;
 
-      // Crée un panorama 360° à partir d'une image equirectangulaire
-      const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", { segments: 32, diameter: 1000 }, scene);
-      sphere.scaling.x = -1; // Inverser la sphère pour voir depuis l'intérieur
+      // Crée la sphère panoramique à l'endroit
+      const sphere = BABYLON.MeshBuilder.CreateSphere("panorama", {
+        diameter: 1000,
+        segments: 64
+      }, scene);
+      sphere.scaling.x = -1; // Vue intérieure
 
       const panoTexture = new BABYLON.Texture("panthere.png", scene);
       const panoMaterial = new BABYLON.StandardMaterial("panoMat", scene);
       panoMaterial.diffuseTexture = panoTexture;
-      panoMaterial.diffuseTexture.uScale = -1; // Correction horizontale
+      panoMaterial.diffuseTexture.uAng = Math.PI; // Inverser horizontalement
       panoMaterial.backFaceCulling = false;
       sphere.material = panoMaterial;
 
-      // Charger un modèle GLB
-      BABYLON.SceneLoader.ImportMeshAsync("", "./", "socleetoiletoque.glb", scene).then((result) => {
-        const model = result.meshes[0];
-        model.position = new BABYLON.Vector3(0, -1, 5); // Ajuster position
-        model.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5); // Ajuster échelle
+      // Charger et positionner le modèle GLB
+      await BABYLON.SceneLoader.ImportMeshAsync("", "./", "socleetoiletoque.glb", scene).then(result => {
+        const modelRoot = result.meshes[0];
+        modelRoot.position = new BABYLON.Vector3(0, -1, 0);
+        modelRoot.scaling = new BABYLON.Vector3(2, 2, 2); // Agrandir
+        modelRoot.rotation = new BABYLON.Vector3(0, Math.PI, 0); // Retourner si nécessaire
       });
 
       return scene;
     };
 
     createScene().then(scene => {
-      engine.runRenderLoop(() => {
-        scene.render();
-      });
-
-      window.addEventListener("resize", () => {
-        engine.resize();
-      });
+      engine.runRenderLoop(() => scene.render());
+      window.addEventListener("resize", () => engine.resize());
     });
   </script>
 </body>
