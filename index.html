@@ -5,7 +5,17 @@
   <title>Panorama 360° avec modèle GLB</title>
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; }
-    #pano, #threeCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    #pano {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+    }
+    #threeCanvas {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -20,22 +30,29 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/loaders/GLTFLoader.js"></script>
 
   <script>
-    // === Marzipano setup ===
-    var viewer = new Marzipano.Viewer(document.getElementById('pano'));
-    var source = Marzipano.ImageUrlSource.fromString("panthere.png");
-    var geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
-    var view = new Marzipano.RectilinearView({ yaw: 0, pitch: 0, fov: Math.PI / 2 });
-    var scene = viewer.createScene({ source, geometry, view });
+    // === Marzipano ===
+    const viewer = new Marzipano.Viewer(document.getElementById("pano"));
+
+    const source = Marzipano.ImageUrlSource.fromString("panthere.png");
+    const geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
+    const view = new Marzipano.RectilinearView({ yaw: 0, pitch: 0, fov: Math.PI / 2 });
+
+    // Ajouter les contrôles de navigation
+    view.setYawPitchRoll(0, 0, 0);
+    const controls = view.controls();
+    controls.registerMethod('mouseView', new Marzipano.MouseViewSource(), true);
+
+    const scene = viewer.createScene({ source, geometry, view });
     scene.switchTo();
 
-    // === Three.js setup ===
+    // === Three.js ===
     const canvas = document.getElementById("threeCanvas");
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
 
     const scene3D = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(0, 1.5, 3);
 
     const light = new THREE.DirectionalLight(0xffffff, 1);
@@ -45,33 +62,27 @@
     const ambientLight = new THREE.AmbientLight(0xaaaaaa);
     scene3D.add(ambientLight);
 
-    // === Load .glb model ===
     const loader = new THREE.GLTFLoader();
     loader.load("socleetoiletoque.glb", function(gltf) {
       const model = gltf.scene;
-      model.scale.set(1, 1, 1); // Ajuste l’échelle si nécessaire
-      model.position.set(0, 0, 0); // Centre de la scène
+      model.scale.set(0.5, 0.5, 0.5);
+      model.position.set(0, 0, 0);
       scene3D.add(model);
     }, undefined, function(error) {
-      console.error("Erreur lors du chargement du modèle GLB :", error);
+      console.error("Erreur de chargement du modèle :", error);
     });
 
-    // === Animation loop ===
     function animate() {
       requestAnimationFrame(animate);
       renderer.render(scene3D, camera);
     }
     animate();
 
-    // === Resize handler ===
     window.addEventListener("resize", () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
-
-    // Petit hack pour bien ajuster Marzipano
-    setTimeout(() => window.dispatchEvent(new Event("resize")), 100);
   </script>
 </body>
 </html>
