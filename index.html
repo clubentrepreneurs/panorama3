@@ -42,7 +42,7 @@
     async function createScene() {
       const scene = new BABYLON.Scene(engine);
 
-      // Caméra orbitale centrée sur le modèle
+      // Caméra orbitale
       const camera = new BABYLON.ArcRotateCamera("camera",
         Math.PI / 2, Math.PI / 2.5, 5,
         new BABYLON.Vector3(0, 0, 0), scene);
@@ -55,19 +55,22 @@
         new BABYLON.Vector3(0, 1, 0), scene);
       light.intensity = 1;
 
-      // Sphère panoramique pour le background
+      // Sphère panoramique
       const panorama = BABYLON.MeshBuilder.CreateSphere("panorama", {
         segments: 64,
         diameter: 1000,
         sideOrientation: BABYLON.Mesh.BACKSIDE
       }, scene);
 
-      // ✅ Correction orientation
-      panorama.rotation.y = Math.PI;
-
       const panoMaterial = new BABYLON.StandardMaterial("panoMat", scene);
-      panoMaterial.diffuseTexture = new BABYLON.Texture("test.png", scene);
-      panoMaterial.diffuseTexture.coordinatesMode = BABYLON.Texture.FIXED_EQUIRECTANGULAR_MODE;
+      const texture = new BABYLON.Texture("test.png", scene);
+
+      // ✅ Correction orientation de la texture
+      texture.uScale = -1; // Inversion horizontale
+      texture.vScale = 1;
+
+      texture.coordinatesMode = BABYLON.Texture.FIXED_EQUIRECTANGULAR_MODE;
+      panoMaterial.diffuseTexture = texture;
       panoMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
       panoMaterial.backFaceCulling = false;
       panorama.material = panoMaterial;
