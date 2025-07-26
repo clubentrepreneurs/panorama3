@@ -62,12 +62,11 @@
         sideOrientation: BABYLON.Mesh.BACKSIDE
       }, scene);
 
+      // ✅ Corriger l'effet miroir horizontal
+      panorama.scaling.x = -1;
+
       const panoMaterial = new BABYLON.StandardMaterial("panoMat", scene);
       const texture = new BABYLON.Texture("test.png", scene);
-
-      // ✅ Correction orientation de la texture
-      texture.uScale = -1; // Inversion horizontale
-      texture.vScale = 1;
 
       texture.coordinatesMode = BABYLON.Texture.FIXED_EQUIRECTANGULAR_MODE;
       panoMaterial.diffuseTexture = texture;
