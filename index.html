@@ -96,10 +96,15 @@
 
       // Chargement du modèle .glb
       let model;
+      let modelMeshes = [];
+
       await BABYLON.SceneLoader.ImportMeshAsync("", "./", "socleetoiletoque.glb", scene).then(result => {
         model = result.meshes[0];
         model.scaling = new BABYLON.Vector3(2, 2, 2);
-        model.isPickable = true; // ✅ rendre cliquable
+
+        // ✅ Rendre tous les sous-meshes pickables
+        modelMeshes = result.meshes;
+        modelMeshes.forEach(mesh => mesh.isPickable = true);
       });
 
       // Position fixe dans le panorama
@@ -137,7 +142,8 @@
       // ✅ Clic sur le modèle pour ouvrir la vidéo
       scene.onPointerObservable.add((pointerInfo) => {
         if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERPICK) {
-          if (pointerInfo.pickInfo?.pickedMesh === model) {
+          const pickedMesh = pointerInfo.pickInfo?.pickedMesh;
+          if (pickedMesh && modelMeshes.includes(pickedMesh)) {
             videoContainer.style.display = "block";
           }
         }
