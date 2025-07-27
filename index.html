@@ -80,9 +80,28 @@
       let model;
       await BABYLON.SceneLoader.ImportMeshAsync("", "./", "socleetoiletoque.glb", scene).then(result => {
         model = result.meshes[0];
-        model.position = new BABYLON.Vector3(0, -1, 0);
         model.scaling = new BABYLON.Vector3(2, 2, 2);
-        model.rotation = new BABYLON.Vector3(0, Math.PI, 0);
+      });
+
+      // ✅ Position fixe dans le panorama (direction sphérique)
+      const targetDirection = new BABYLON.Vector3(0, 0, -1); // direction vers le fond
+      const distanceFromCenter = 5;
+
+      // Animation du modèle pour qu’il suive la rotation de la caméra
+      scene.onBeforeRenderObservable.add(() => {
+        if (!model) return;
+
+        // Calcul de la direction transformée par la rotation de la caméra
+        const rotationMatrix = BABYLON.Matrix.RotationYawPitchRoll(
+          camera.alpha, camera.beta, 0
+        );
+        const rotatedDirection = BABYLON.Vector3.TransformCoordinates(targetDirection, rotationMatrix);
+
+        // Position du modèle dans cette direction
+        model.position = rotatedDirection.scale(distanceFromCenter);
+
+        // Optionnel : orienter le modèle vers le centre
+        model.lookAt(BABYLON.Vector3.Zero());
       });
 
       // Overlay qui suit le modèle
