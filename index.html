@@ -65,6 +65,11 @@
       const panoMaterial = new BABYLON.StandardMaterial("panoMat", scene);
       const texture = new BABYLON.Texture("test.png", scene);
 
+      // ✅ Inversion horizontale de la texture
+      texture.uScale = -1;
+      texture.uOffset = 1;
+      texture.vScale = 1;
+
       texture.coordinatesMode = BABYLON.Texture.FIXED_EQUIRECTANGULAR_MODE;
       panoMaterial.diffuseTexture = texture;
       panoMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
