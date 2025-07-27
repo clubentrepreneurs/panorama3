@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Panorama + GLB + Overlay</title>
+  <title>Panorama + GLB + Overlay + Vidéo</title>
   <style>
     html, body {
       margin: 0;
@@ -24,11 +24,29 @@
       transform: translate(-50%, -100%);
       z-index: 2;
     }
+    #videoContainer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 50%;
+      background-color: black;
+      z-index: 3;
+      display: none;
+    }
+    #videoContainer iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
   </style>
 </head>
 <body>
   <canvas id="renderCanvas"></canvas>
   <div id="overlay">4 incontournables</div>
+  <div id="videoContainer">
+    <iframe src="https://www.youtube.com/embed/Jgcb7hjdgaU?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+  </div>
 
   <!-- Babylon.js -->
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
@@ -37,6 +55,7 @@
   <script>
     const canvas = document.getElementById("renderCanvas");
     const overlay = document.getElementById("overlay");
+    const videoContainer = document.getElementById("videoContainer");
     const engine = new BABYLON.Engine(canvas, true);
 
     async function createScene() {
@@ -65,12 +84,11 @@
       const panoMaterial = new BABYLON.StandardMaterial("panoMat", scene);
       const texture = new BABYLON.Texture("test.png", scene);
 
-      // ✅ Inversion horizontale de la texture
       texture.uScale = -1;
       texture.uOffset = 1;
       texture.vScale = 1;
-
       texture.coordinatesMode = BABYLON.Texture.FIXED_EQUIRECTANGULAR_MODE;
+
       panoMaterial.diffuseTexture = texture;
       panoMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
       panoMaterial.backFaceCulling = false;
@@ -81,27 +99,23 @@
       await BABYLON.SceneLoader.ImportMeshAsync("", "./", "socleetoiletoque.glb", scene).then(result => {
         model = result.meshes[0];
         model.scaling = new BABYLON.Vector3(2, 2, 2);
+        model.isPickable = true; // ✅ rendre cliquable
       });
 
-      // ✅ Position fixe dans le panorama (direction sphérique)
-      const targetDirection = new BABYLON.Vector3(0, 0, -1); // direction vers le fond
+      // Position fixe dans le panorama
+      const targetDirection = new BABYLON.Vector3(0, 0, -1);
       const distanceFromCenter = 5;
-      const verticalOffset = -5.5; // valeur négative = plus bas
+      const verticalOffset = -1.5;
 
-      // Animation du modèle pour qu’il suive la rotation de la caméra
       scene.onBeforeRenderObservable.add(() => {
         if (!model) return;
 
-        // Calcul de la direction transformée par la rotation de la caméra
         const rotationMatrix = BABYLON.Matrix.RotationYawPitchRoll(
           camera.alpha, camera.beta, 0
         );
         const rotatedDirection = BABYLON.Vector3.TransformCoordinates(targetDirection, rotationMatrix);
 
-        // Position du modèle dans cette direction
-        model.position = rotatedDirection.scale(distanceFromCenter);
-
-        // Optionnel : orienter le modèle vers le centre
+        model.position = rotatedDirection.scale(distanceFromCenter).add(new BABYLON.Vector3(0, verticalOffset, 0));
         model.lookAt(BABYLON.Vector3.Zero());
       });
 
@@ -118,6 +132,15 @@
 
         overlay.style.left = `${pos.x}px`;
         overlay.style.top = `${pos.y}px`;
+      });
+
+      // ✅ Clic sur le modèle pour ouvrir la vidéo
+      scene.onPointerObservable.add((pointerInfo) => {
+        if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERPICK) {
+          if (pointerInfo.pickInfo?.pickedMesh === model) {
+            videoContainer.style.display = "block";
+          }
+        }
       });
 
       return scene;
