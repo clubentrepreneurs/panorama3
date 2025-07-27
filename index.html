@@ -55,15 +55,12 @@
         new BABYLON.Vector3(0, 1, 0), scene);
       light.intensity = 1;
 
-      // Sphère panoramique avec effet miroir horizontal
+      // Sphère panoramique
       const panorama = BABYLON.MeshBuilder.CreateSphere("panorama", {
         segments: 64,
         diameter: 1000,
         sideOrientation: BABYLON.Mesh.BACKSIDE
       }, scene);
-
-      // ✅ Retourner l’image panoramique horizontalement
-      panorama.scaling.x = -1;
 
       const panoMaterial = new BABYLON.StandardMaterial("panoMat", scene);
       const texture = new BABYLON.Texture("test.png", scene);
