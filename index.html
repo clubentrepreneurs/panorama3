@@ -2,26 +2,16 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Panorama + GLB avec Babylon.js</title>
+  <title>Panorama + .glb Babylon</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      width: 100%;
-      height: 100%;
-    }
-    canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+    canvas { width: 100%; height: 100%; display: block; }
   </style>
 </head>
 <body>
   <canvas id="renderCanvas"></canvas>
 
-  <!-- Babylon.js depuis CDN -->
+  <!-- Babylon.js CDN -->
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 
@@ -29,65 +19,56 @@
     window.addEventListener('DOMContentLoaded', function () {
       const canvas = document.getElementById('renderCanvas');
       const engine = new BABYLON.Engine(canvas, true);
-
       const scene = new BABYLON.Scene(engine);
-      scene.clearColor = new BABYLON.Color3.Black();
-
-      // Caméra orbitale (libre)
-      const camera = new BABYLON.ArcRotateCamera("cam",
-        Math.PI / 2, Math.PI / 2, 10,
-        new BABYLON.Vector3(0, 0, 0),
-        scene);
-      camera.attachControl(canvas, true);
-      camera.wheelDeltaPercentage = 0.01;
 
       // Lumière
-      const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
+      const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+      light.intensity = 1;
+
+      // Caméra orbitale
+      const camera = new BABYLON.ArcRotateCamera("cam",
+        Math.PI / 2, Math.PI / 2.5, 10,
+        new BABYLON.Vector3(0, 0, 0), scene);
+      camera.attachControl(canvas, true);
+      camera.wheelDeltaPercentage = 0.01;
+      camera.minZ = 0.1;
+      camera.upperRadiusLimit = 1000;
 
       // Panorama
-      const photoDome = new BABYLON.PhotoDome(
-        "panorama",
-        "test.png",
+      const dome = new BABYLON.PhotoDome(
+        "testDome",
+        "test.png", // ton image equirectangulaire
         {
           resolution: 32,
-          size: 200,
+          size: 1000, // diamètre de la sphère
         },
         scene
       );
 
       // Chargement du modèle .glb
-     BABYLON.SceneLoader.ImportMesh(
-  null, "./", "socleetoiletoque.glb", scene,
-  function (meshes) {
-    const model = meshes[0];
+      BABYLON.SceneLoader.ImportMesh(
+        null, "./", "socleetoiletoque.glb", scene,
+        function (meshes) {
+          const model = meshes[0];
 
-    // Définir le rayon intérieur du PhotoDome
-    const sphereRadius = 500;
+          // Taille visible à distance
+          model.scaling = new BABYLON.Vector3(50, 50, 50);
 
-    // Placer le modèle sur la paroi "devant" la caméra (axe Z)
-    model.position = new BABYLON.Vector3(0, 0, -sphereRadius + 5); // collé à l'intérieur
+          // Place l’objet proche de la paroi intérieure du panorama
+          const distance = -490; // intérieur de la sphère
+          model.position = new BABYLON.Vector3(0, 0, distance);
 
-    // Tourner le modèle pour qu’il soit bien orienté
-    model.rotation = new BABYLON.Vector3(0, Math.PI, 0); // selon ton modèle
+          // Orientation face caméra
+          model.rotation = new BABYLON.Vector3(0, Math.PI, 0);
+        },
+        null,
+        function (scene, message, exception) {
+          console.error("Erreur de chargement :", message);
+        }
+      );
 
-    // Échelle adaptée à sa position
-    model.scaling.scaleInPlace(30);
-  },
-  null,
-  function (scene, message, exception) {
-    console.error("Erreur chargement GLB :", message, exception);
-  }
-);
-
-
-
-      engine.runRenderLoop(() => {
-        scene.render();
-      });
-
-      window.addEventListener('resize', () => {
-        engine.resize();
-      });
+      engine.runRenderLoop(() => scene.render());
+      window.addEventListener('resize', () => engine.resize());
     });
   </script>
 </body>
