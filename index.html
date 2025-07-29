@@ -2,165 +2,153 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Panorama + GLB + Texte suivi + Zoom tactile optimisé</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <title>Panorama avec GLB</title>
   <style>
     html, body {
-      margin: 0; overflow: hidden; height: 100%; touch-action: none;
-      -webkit-user-select: none; 
-      -ms-user-select: none;
-      user-select: none;
-    }
-    #renderCanvas {
-      width: 100%; height: 100%; display: block;
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
       touch-action: none;
+      -ms-touch-action: none;
     }
-    #videoContainer {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 80%; max-width: 800px;
-      aspect-ratio: 16/9;
-      display: none;
-      z-index: 10;
-      background: black;
+
+    #renderCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
-    #videoContainer iframe {
-      width: 100%; height: 100%;
-    }
-    #closeButton {
-      position: absolute;
-      top: -40px; right: 0;
-      background: rgba(0, 0, 0, 0.7);
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      cursor: pointer;
-      font-size: 16px;
-      z-index: 15;
-    }
+
     #overlayText {
       position: absolute;
       color: white;
-      text-align: center;
       font-size: 1.2em;
-      text-shadow: 1px 1px 4px black;
       pointer-events: none;
-      z-index: 5;
-      white-space: nowrap;
+      z-index: 10;
+      text-shadow: 1px 1px 3px black;
+    }
+
+    #videoModal {
+      display: none;
+      position: absolute;
+      top: 25%;
+      left: 25%;
+      width: 50%;
+      height: 50%;
+      background: black;
+      z-index: 20;
+    }
+
+    #videoModal iframe {
+      width: 100%;
+      height: 100%;
+    }
+
+    #closeBtn {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      color: white;
+      background: red;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      z-index: 21;
     }
   </style>
 </head>
 <body>
+  <canvas id="renderCanvas"></canvas>
+  <div id="overlayText">👋 Texte lié au modèle</div>
 
-<canvas id="renderCanvas"></canvas>
+  <div id="videoModal">
+    <button id="closeBtn">Fermer</button>
+    <iframe src="https://www.youtube.com/embed/Jgcb7hjdgaU?autoplay=1" frameborder="0" allowfullscreen></iframe>
+  </div>
 
-<div id="overlayText">Cliquez sur le modèle</div>
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 
-<div id="videoContainer">
-  <button id="closeButton">Fermer</button>
-  <iframe id="youtubeFrame" src="" frameborder="0" allowfullscreen></iframe>
-</div>
+  <script>
+    const canvas = document.getElementById("renderCanvas");
+    const engine = new BABYLON.Engine(canvas, true);
+    let glbMeshes = [];
 
-<script src="https://cdn.babylonjs.com/babylon.js"></script>
-<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    const createScene = async () => {
+      const scene = new BABYLON.Scene(engine);
+      scene.clearColor = new BABYLON.Color4(0, 0, 0, 1);
 
-<script>
-  const canvas = document.getElementById("renderCanvas");
-  const engine = new BABYLON.Engine(canvas, true);
-  const scene = new BABYLON.Scene(engine);
+      const camera = new BABYLON.ArcRotateCamera("camera", Math.PI, Math.PI / 2, 10, BABYLON.Vector3.Zero(), scene);
+      camera.attachControl(canvas, true);
+      camera.wheelDeltaPercentage = 0.01;
+      camera.lowerRadiusLimit = 2;
+      camera.upperRadiusLimit = 15;
 
-  canvas.style.touchAction = "none";
-  canvas.addEventListener('touchstart', function(e) {
-    if (e.touches.length > 1) {
-      e.preventDefault();
-    }
-  }, { passive: false });
+      const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
 
-  const camera = new BABYLON.ArcRotateCamera("cam",
-    Math.PI / 2, Math.PI / 2.5, 300,
-    new BABYLON.Vector3(0, 0, 0), scene);
+      const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", { segments: 64, diameter: 1000 }, scene);
+      sphere.infiniteDistance = true;
 
-  camera.pinchDeltaPercentage = 0.003;
-  camera.wheelDeltaPercentage = 0.005;
-  camera.lowerRadiusLimit = 150;  // zoom max proche
-  camera.upperRadiusLimit = 400;  // dé-zoom max limité pour ne pas trop éloigner
+      const panoMat = new BABYLON.StandardMaterial("panoMat", scene);
+      panoMat.diffuseTexture = new BABYLON.Texture("test.png", scene);
+      panoMat.backFaceCulling = false;
 
-  camera.panningSensibility = 2500;
-  camera.angularSensibilityX = 5000;
-  camera.angularSensibilityY = 5000;
+      // ✅ Corriger l'inversion du panorama
+      panoMat.diffuseTexture.uScale = -1;
 
-  camera.attachControl(canvas, true);
+      sphere.material = panoMat;
 
-  new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
+      // ✅ Charger le modèle GLB
+      const result = await BABYLON.SceneLoader.ImportMeshAsync("", "./", "socleetoiletoque.glb", scene);
+      glbMeshes = result.meshes.filter(m => m !== result.meshes[0]); // exclure le rootNode
 
-  const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {
-    segments: 64,
-    diameter: 1000,
-  }, scene);
-  sphere.scaling.x = -1;
+      glbMeshes.forEach(mesh => {
+        mesh.parent = camera;
+        mesh.position = new BABYLON.Vector3(0, -0.5, 3);
+        mesh.scaling = new BABYLON.Vector3(2, 2, 2);
+      });
 
-  const panoMat = new BABYLON.StandardMaterial("panoMat", scene);
-  panoMat.diffuseTexture = new BABYLON.Texture("test.png", scene);
-  panoMat.backFaceCulling = false;
-  panoMat.specularColor = new BABYLON.Color3(0, 0, 0);
-  sphere.material = panoMat;
+      // ✅ Clic sur le GLB pour ouvrir la vidéo
+      canvas.addEventListener("pointerdown", evt => {
+        const pickResult = scene.pick(evt.clientX, evt.clientY);
+        if (pickResult.hit && glbMeshes.includes(pickResult.pickedMesh)) {
+          document.getElementById("videoModal").style.display = "block";
+        }
+      });
 
-  let glbMeshes = [];
+      document.getElementById("closeBtn").onclick = () => {
+        document.getElementById("videoModal").style.display = "none";
+        const iframe = document.querySelector("#videoModal iframe");
+        iframe.src = iframe.src; // Reset vidéo
+      };
 
-  BABYLON.SceneLoader.ImportMesh("", "./", "socleetoiletoque.glb", scene, function (meshes) {
-    glbMeshes = meshes;
-    glbMeshes.forEach(mesh => {
-      mesh.scaling = new BABYLON.Vector3(20, 20, 20);
-      mesh.position = new BABYLON.Vector3(0, 0, 498);
+      return { scene, camera };
+    };
+
+    createScene().then(({ scene, camera }) => {
+      const overlayText = document.getElementById("overlayText");
+
+      engine.runRenderLoop(() => {
+        scene.render();
+
+        if (glbMeshes.length) {
+          const mesh = glbMeshes[0];
+          const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
+
+          const pos = BABYLON.Vector3.Project(
+            worldCenter,
+            BABYLON.Matrix.Identity(),
+            scene.getTransformMatrix(),
+            camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
+          );
+
+          overlayText.style.left = `${pos.x}px`;
+          overlayText.style.top = `${pos.y + 10}px`;
+        }
+      });
+
+      window.addEventListener("resize", () => engine.resize());
     });
-  });
-
-  scene.onPointerObservable.add((pointerInfo) => {
-    if (pointerInfo.pickInfo.hit) {
-      const picked = pointerInfo.pickInfo.pickedMesh;
-      if (glbMeshes.includes(picked)) {
-        const container = document.getElementById("videoContainer");
-        const frame = document.getElementById("youtubeFrame");
-        frame.src = "https://www.youtube.com/embed/Jgcb7hjdgaU?autoplay=1";
-        container.style.display = "block";
-      }
-    }
-  }, BABYLON.PointerEventTypes.POINTERPICK);
-
-  document.getElementById("closeButton").addEventListener("click", () => {
-    const container = document.getElementById("videoContainer");
-    const frame = document.getElementById("youtubeFrame");
-    frame.src = "";
-    container.style.display = "none";
-  });
-
-  const overlayText = document.getElementById("overlayText");
-
- engine.runRenderLoop(() => {
-  scene.render();
-
-  if (glbMeshes.length) {
-    const mesh = glbMeshes[0];
-    const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
-
-    const pos = BABYLON.Vector3.Project(
-      worldCenter,
-      BABYLON.Matrix.Identity(),
-      scene.getTransformMatrix(),
-      camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
-    );
-
-    overlayText.style.left = `${pos.x}px`;
-    overlayText.style.top = `${pos.y + 10}px`;
-  }
-});
-
-
-  window.addEventListener("resize", () => {
-    engine.resize();
-  });
-</script>
-
+  </script>
 </body>
 </html>
