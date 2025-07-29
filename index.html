@@ -16,6 +16,11 @@
       width: 100%;
       height: 100%;
     }
+    /* 🔥 Supprimer la mosaïque de chargement */
+    .pnlm-container {
+      background-image: none !important;
+      background-color: black !important;
+    }
   </style>
 </head>
 <body>
@@ -33,7 +38,7 @@
     mouseZoom: true,
     maxPitch: 90,
     minPitch: -90,
-    backgroundColor: [0, 0, 0] // Remplace la mosaïque par un fond noir
+    backgroundColor: [0, 0, 0]
   });
 </script>
 
