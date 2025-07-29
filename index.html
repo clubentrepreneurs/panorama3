@@ -137,20 +137,25 @@
 
   const overlayText = document.getElementById("overlayText");
 
-  engine.runRenderLoop(() => {
-    scene.render();
+ engine.runRenderLoop(() => {
+  scene.render();
 
-    if (glbMeshes.length) {
-      const pos = BABYLON.Vector3.Project(
-        glbMeshes[0].position,
-        BABYLON.Matrix.Identity(),
-        scene.getTransformMatrix(),
-        camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
-      );
-      overlayText.style.left = `${pos.x}px`;
-      overlayText.style.top = `${pos.y + 30}px`;
-    }
-  });
+  if (glbMeshes.length) {
+    const mesh = glbMeshes[0];
+    const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
+
+    const pos = BABYLON.Vector3.Project(
+      worldCenter,
+      BABYLON.Matrix.Identity(),
+      scene.getTransformMatrix(),
+      camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
+    );
+
+    overlayText.style.left = `${pos.x}px`;
+    overlayText.style.top = `${pos.y + 10}px`;
+  }
+});
+
 
   window.addEventListener("resize", () => {
     engine.resize();
