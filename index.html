@@ -2,78 +2,65 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Panorama + GLB</title>
+  <title>Panorama 360° + GLB</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { margin: 0; overflow: hidden; }
-    canvas { display: block; }
+    html, body { margin: 0; overflow: hidden; height: 100%; }
+    canvas { width: 100%; height: 100%; display: block; }
   </style>
+  <!-- Babylon.js CDN -->
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 </head>
 <body>
-<script type="module">
-  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
-  import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/controls/OrbitControls.js';
-  import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/GLTFLoader.js';
+<canvas id="renderCanvas"></canvas>
 
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 0, 0.1); // Légèrement décentré pour permettre le zoom
+<script>
+  // Initialisation
+  const canvas = document.getElementById("renderCanvas");
+  const engine = new BABYLON.Engine(canvas, true);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
+  const createScene = async () => {
+    const scene = new BABYLON.Scene(engine);
 
-  // Contrôles utilisateur
-  const controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableZoom = true;
-  controls.enablePan = false;
-  controls.rotateSpeed = 0.5;
-  controls.zoomSpeed = 1.2;
+    // Caméra orbitale
+    const camera = new BABYLON.ArcRotateCamera("camera", Math.PI, Math.PI / 2, 5, BABYLON.Vector3.Zero(), scene);
+    camera.attachControl(canvas, true);
+    camera.wheelDeltaPercentage = 0.01; // Zoom fluide
 
-  // Ajout du panorama en fond sphérique
-  const textureLoader = new THREE.TextureLoader();
-  textureLoader.load('test.png', (texture) => {
-    texture.mapping = THREE.EquirectangularReflectionMapping;
-    scene.background = texture;
+    // Lumière
+    const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-    // Créer une sphère inversée
-    const sphereGeometry = new THREE.SphereGeometry(500, 64, 64);
-    sphereGeometry.scale(-1, 1, 1);
-    const sphereMaterial = new THREE.MeshBasicMaterial({ map: texture });
-    const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-    scene.add(sphere);
+    // Arrière-plan panoramique
+    const photoDome = new BABYLON.PhotoDome(
+      "panorama",
+      "test.png",
+      {
+        resolution: 32,
+        size: 1000,
+      },
+      scene
+    );
+
+    // Chargement du modèle .glb
+    await BABYLON.SceneLoader.ImportMeshAsync("", "./", "socleetoiletoque.glb", scene).then((result) => {
+      const glb = result.meshes[0];
+      glb.position = new BABYLON.Vector3(0, 0, -5); // Un peu en profondeur
+      glb.scaling = new BABYLON.Vector3(1, 1, 1);   // Adapter au besoin
+    });
+
+    return scene;
+  };
+
+  createScene().then((scene) => {
+    engine.runRenderLoop(() => {
+      scene.render();
+    });
   });
 
-  // Charger le modèle .glb
-  const loader = new GLTFLoader();
-  loader.load(
-    'socleetoiletoque.glb',
-    (gltf) => {
-      const model = gltf.scene;
-      model.position.set(0, 0, -5); // Placer le modèle un peu en profondeur
-      model.scale.set(1, 1, 1);     // Adapter au besoin
-      scene.add(model);
-    },
-    undefined,
-    (error) => {
-      console.error('Erreur lors du chargement du GLB:', error);
-    }
-  );
-
-  // Redimensionnement dynamique
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+  window.addEventListener("resize", () => {
+    engine.resize();
   });
-
-  // Boucle de rendu
-  function animate() {
-    requestAnimationFrame(animate);
-    controls.update();
-    renderer.render(scene, camera);
-  }
-  animate();
 </script>
 </body>
 </html>
