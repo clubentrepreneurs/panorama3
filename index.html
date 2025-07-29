@@ -2,77 +2,50 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Panorama 360° avec zoom tactile</title>
+  <title>Zoom par pincement Babylon.js</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
-      width: 100%;
-      height: 100%;
     }
-    #renderCanvas {
+    canvas {
       width: 100%;
       height: 100%;
-      touch-action: none;
+      touch-action: none; /* 🔥 essentiel pour le zoom tactile */
     }
   </style>
-  <!-- Babylon.js CDN -->
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
 </head>
 <body>
   <canvas id="renderCanvas"></canvas>
-
   <script>
     const canvas = document.getElementById("renderCanvas");
     const engine = new BABYLON.Engine(canvas, true);
+    const scene = new BABYLON.Scene(engine);
 
-    const createScene = function () {
-      const scene = new BABYLON.Scene(engine);
+    const camera = new BABYLON.ArcRotateCamera("camera",
+      Math.PI / 2, Math.PI / 2, 3,
+      BABYLON.Vector3.Zero(), scene);
+    camera.attachControl(canvas, true);
 
-      // 📷 Caméra interactive
-      const camera = new BABYLON.ArcRotateCamera("Camera",
-        Math.PI / 2, Math.PI / 2, 1,
-        BABYLON.Vector3.Zero(), scene);
+    // ✅ Activer le zoom par pincement
+    camera.inputs.attached.pointers.pinchToZoom = true;
+    camera.inputs.attached.pointers.multiTouchZoom = true;
+    camera.lowerRadiusLimit = 1;
+    camera.upperRadiusLimit = 10;
+    camera.pinchPrecision = 100;
 
-      camera.attachControl(canvas, true);
-      camera.minZ = 0.01;
-      camera.lowerRadiusLimit = 0.1;
-      camera.upperRadiusLimit = 5;
+    const light = new BABYLON.HemisphericLight("light",
+      new BABYLON.Vector3(0, 1, 0), scene);
 
-      // ✅ Activer zoom par pincement
-      camera.inputs.attached.pointers.pinchToZoom = true;
-      camera.inputs.attached.pointers.multiTouchPanning = false;
-      camera.inputs.attached.pointers.multiTouchZoom = true;
-      camera.wheelPrecision = 100;       // Molette souris
-      camera.pinchPrecision = 200;       // Pincement tactile
+    const sphere = BABYLON.MeshBuilder.CreateSphere("sphere",
+      { diameter: 1 }, scene);
 
-      // 💡 Lumière
-      const light = new BABYLON.HemisphericLight("light",
-        new BABYLON.Vector3(0, 1, 0), scene);
-
-      // 🌐 Sphère inversée avec texture
-      const sphere = BABYLON.MeshBuilder.CreateSphere("sphere",
-        { segments: 64, diameter: 1000 }, scene);
-      sphere.scaling = new BABYLON.Vector3(-1, 1, 1); // Vue intérieure
-
-      const material = new BABYLON.StandardMaterial("panoramaMat", scene);
-      material.diffuseTexture = new BABYLON.Texture("test.png", scene);
-      material.diffuseTexture.uScale = -1;
-      material.backFaceCulling = false;
-      sphere.material = material;
-
-      return scene;
-    };
-
-    const scene = createScene();
-    engine.runRenderLoop(() => {
-      scene.render();
-    });
-
-    window.addEventListener("resize", () => {
-      engine.resize();
-    });
+    engine.runRenderLoop(() => scene.render());
+    window.addEventListener("resize", () => engine.resize());
   </script>
 </body>
 </html>
