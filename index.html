@@ -85,17 +85,19 @@
   camera.wheelDeltaPercentage = 0.005;
   camera.lowerRadiusLimit = 150;
   camera.upperRadiusLimit = 400;
-
   camera.panningSensibility = 2500;
   camera.angularSensibilityX = 5000;
   camera.angularSensibilityY = 5000;
-
   camera.attachControl(canvas, true);
 
-  // ✅ Lumière homogène et claire
-  const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-  light.intensity = 1.2;
+  // Lumière homogène
+  const hemiLight = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+  hemiLight.intensity = 1.0;
 
+  const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(0, 0, -1), scene);
+  dirLight.intensity = 0.4;
+
+  // Sphère panoramique
   const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {
     segments: 64,
     diameter: 1000,
@@ -106,8 +108,10 @@
   panoMat.diffuseTexture = new BABYLON.Texture("test.png", scene);
   panoMat.backFaceCulling = false;
   panoMat.specularColor = new BABYLON.Color3(0, 0, 0);
+  panoMat.ambientColor = new BABYLON.Color3(1, 1, 1); // Ajoute de la lumière ambiante partout
   sphere.material = panoMat;
 
+  // Import GLB
   let glbMeshes = [];
 
   BABYLON.SceneLoader.ImportMesh("", "./", "socleetoiletoque.glb", scene, function (meshes) {
@@ -118,6 +122,7 @@
     });
   });
 
+  // Clic sur GLB = ouvrir vidéo
   scene.onPointerObservable.add((pointerInfo) => {
     if (pointerInfo.pickInfo.hit) {
       const picked = pointerInfo.pickInfo.pickedMesh;
@@ -137,6 +142,7 @@
     container.style.display = "none";
   });
 
+  // Overlay texte lié au GLB
   const overlayText = document.getElementById("overlayText");
 
   engine.runRenderLoop(() => {
