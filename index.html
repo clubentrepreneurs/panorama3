@@ -2,58 +2,71 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Panorama 360° - Three.js</title>
+  <title>Panorama 360° avec Babylon.js</title>
   <style>
-    html, body { margin: 0; height: 100%; overflow: hidden; }
-    canvas { display: block; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
   </style>
 </head>
 <body>
-<script type="module">
-  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
-  import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/controls/OrbitControls.js';
+  <canvas id="renderCanvas"></canvas>
 
-  // Scène et caméra
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 0, 0.1); // légèrement au centre
+  <!-- Babylon.js depuis CDN -->
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 
-  // Rendu
-  const renderer = new THREE.WebGLRenderer();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
+  <script>
+    window.addEventListener('DOMContentLoaded', function () {
+      // Rendu
+      const canvas = document.getElementById('renderCanvas');
+      const engine = new BABYLON.Engine(canvas, true);
 
-  // Contrôles
-  const controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableZoom = true;
-  controls.enablePan = false;
+      // Scène
+      const scene = new BABYLON.Scene(engine);
+      scene.clearColor = new BABYLON.Color3.Black();
 
-  // Chargement de l'image panoramique
-  const loader = new THREE.TextureLoader();
-  loader.load('test.png', (texture) => {
-    const geometry = new THREE.SphereGeometry(500, 60, 40);
-    geometry.scale(-1, 1, 1); // inverser la sphère pour que la texture soit à l’intérieur
-    const material = new THREE.MeshBasicMaterial({ map: texture });
-    const sphere = new THREE.Mesh(geometry, material);
-    scene.add(sphere);
-  }, undefined, (err) => {
-    console.error("Erreur de chargement de l'image : ", err);
-  });
+      // Caméra libre contrôlable
+      const camera = new BABYLON.ArcRotateCamera("cam",
+        Math.PI / 2, Math.PI / 2, 5,
+        new BABYLON.Vector3(0, 0, 0),
+        scene);
+      camera.attachControl(canvas, true);
+      camera.wheelDeltaPercentage = 0.01; // Zoom plus fluide
 
-  // Animation
-  function animate() {
-    requestAnimationFrame(animate);
-    controls.update();
-    renderer.render(scene, camera);
-  }
-  animate();
+      // Lumière
+      const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
 
-  // Resize
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-</script>
+      // Texture panoramique
+      const photoDome = new BABYLON.PhotoDome(
+        "panorama",
+        "test.png",
+        {
+          resolution: 32,
+          size: 1000,
+        },
+        scene
+      );
+
+      // Boucle de rendu
+      engine.runRenderLoop(() => {
+        scene.render();
+      });
+
+      // Resize
+      window.addEventListener('resize', () => {
+        engine.resize();
+      });
+    });
+  </script>
 </body>
 </html>
