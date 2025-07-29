@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Panorama + GLB + Vidéo</title>
+  <title>Panorama + GLB + Vidéo + Texte</title>
   <style>
     html, body {
       margin: 0;
@@ -52,10 +52,25 @@
     #closeButton:hover {
       color: #ccc;
     }
+
+    #glbLabel {
+      position: absolute;
+      color: white;
+      font-size: 16px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 4px 10px;
+      border-radius: 8px;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 998;
+    }
   </style>
 </head>
 <body>
   <canvas id="renderCanvas"></canvas>
+
+  <!-- Texte overlay lié au GLB -->
+  <div id="glbLabel">✨ Mon modèle</div>
 
   <!-- Vidéo en overlay -->
   <div id="videoOverlay">
@@ -96,6 +111,8 @@
         scene
       );
 
+      let modelMesh = null; // Référence du mesh principal
+
       // Chargement du modèle GLB
       BABYLON.SceneLoader.ImportMesh(
         null, "./", "socleetoiletoque.glb", scene,
@@ -105,6 +122,10 @@
             mesh.position = new BABYLON.Vector3(0, 0, -240);
             mesh.rotation = new BABYLON.Vector3(0, Math.PI, 0);
 
+            // Enregistrer le premier mesh pour lier le texte
+            if (!modelMesh) modelMesh = mesh;
+
+            // Action au clic
             mesh.actionManager = new BABYLON.ActionManager(scene);
             mesh.actionManager.registerAction(
               new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
@@ -122,13 +143,36 @@
         }
       );
 
-      // Bouton "Fermer"
+      // Fermer la vidéo
       document.getElementById('closeButton').addEventListener('click', function () {
         document.getElementById('videoOverlay').style.display = 'none';
-        document.getElementById('videoFrame').src = ""; // Stop la vidéo
+        document.getElementById('videoFrame').src = "";
       });
 
-      engine.runRenderLoop(() => scene.render());
+      // Mise à jour position texte
+      const label = document.getElementById('glbLabel');
+      engine.runRenderLoop(() => {
+        scene.render();
+
+        if (modelMesh) {
+          // Obtenir position de la base du modèle (en dessous)
+          const worldPos = modelMesh.getBoundingInfo().boundingBox.centerWorld.clone();
+          worldPos.y -= modelMesh.getBoundingInfo().boundingBox.extendSizeWorld.y + 2;
+
+          // Convertir en coordonnées 2D écran
+          const screenPos = BABYLON.Vector3.Project(
+            worldPos,
+            BABYLON.Matrix.Identity(),
+            scene.getTransformMatrix(),
+            camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
+          );
+
+          // Positionner l'élément HTML
+          label.style.left = screenPos.x + "px";
+          label.style.top = screenPos.y + "px";
+        }
+      });
+
       window.addEventListener('resize', () => engine.resize());
     });
   </script>
