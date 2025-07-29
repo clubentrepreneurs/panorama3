@@ -2,62 +2,66 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Panorama 360° et Modèle 3D</title>
+  <title>Vue 360° avec Three.js</title>
   <style>
-    body { margin: 0; display: flex; flex-direction: column; height: 100vh; }
-    #viewer360, #viewer3D { flex: 1; }
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
   </style>
-
-  <!-- Photo Sphere Viewer -->
-  <link rel="stylesheet" href="https://unpkg.com/photo-sphere-viewer@5/dist/photo-sphere-viewer.css">
   <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
-  <script src="https://unpkg.com/photo-sphere-viewer@5/dist/photo-sphere-viewer.js"></script>
-
-  <!-- Three.js for GLB -->
-  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.152.2/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
-
-  <!-- Panorama 360° -->
-  <div id="viewer360"></div>
-
-  <!-- Modèle 3D -->
-  <div id="viewer3D"></div>
-
   <script>
-    // 🌐 Panorama 360°
-    const viewer = new PhotoSphereViewer.Viewer({
-      container: document.getElementById('viewer360'),
-      panorama: 'test.png',
-      defaultYaw: '130deg',
-      navbar: ['zoom', 'fullscreen'],
-    });
-
-    // 🧊 Modèle 3D .glb
+    // 🧱 Scène, caméra, rendu
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight / 2), 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight / 2);
-    document.getElementById('viewer3D').appendChild(renderer.domElement);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-    const light = new THREE.HemisphereLight(0xffffff, 0x444444);
-    light.position.set(0, 20, 0);
-    scene.add(light);
+    // 🌐 Texture panoramique
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load('test.png', function(texture) {
+      const geometry = new THREE.SphereGeometry(500, 60, 40);
+      geometry.scale(-1, 1, 1); // Inverser la sphère pour vue intérieure
 
-    const loader = new THREE.GLTFLoader();
-    loader.load('socleetoiletoque.glb', function (gltf) {
-      scene.add(gltf.scene);
-      gltf.scene.position.set(0, 0, 0);
+      const material = new THREE.MeshBasicMaterial({ map: texture });
+      const sphere = new THREE.Mesh(geometry, material);
+      scene.add(sphere);
     });
 
-    camera.position.z = 5;
+    // 🎮 Contrôles de rotation automatique
+    camera.position.set(0, 0, 0);
+    let lon = 0, lat = 0;
 
     function animate() {
       requestAnimationFrame(animate);
+      lon += 0.1;
+      lat = Math.max(-85, Math.min(85, lat));
+      const phi = THREE.MathUtils.degToRad(90 - lat);
+      const theta = THREE.MathUtils.degToRad(lon);
+
+      camera.lookAt(
+        500 * Math.sin(phi) * Math.cos(theta),
+        500 * Math.cos(phi),
+        500 * Math.sin(phi) * Math.sin(theta)
+      );
+
       renderer.render(scene, camera);
     }
+
     animate();
+
+    // 🖱️ Optionnel : interaction souris
+    document.addEventListener('mousemove', function(event) {
+      lon = (event.clientX / window.innerWidth) * 360;
+      lat = (event.clientY / window.innerHeight) * 180 - 90;
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
   </script>
 </body>
 </html>
