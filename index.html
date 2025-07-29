@@ -7,7 +7,7 @@
   <style>
     html, body {
       margin: 0; overflow: hidden; height: 100%; touch-action: none;
-      -webkit-user-select: none; /* Empêche sélection sur mobile */
+      -webkit-user-select: none; 
       -ms-user-select: none;
       user-select: none;
     }
@@ -70,7 +70,6 @@
   const engine = new BABYLON.Engine(canvas, true);
   const scene = new BABYLON.Scene(engine);
 
-  // Empêche zoom natif navigateur sur mobile (pinch)
   canvas.style.touchAction = "none";
   canvas.addEventListener('touchstart', function(e) {
     if (e.touches.length > 1) {
@@ -88,7 +87,6 @@
   camera.upperRadiusLimit = 600;
   camera.panningSensibility = 2500;
 
-  // Moins sensible aux déplacements tactiles
   camera.angularSensibilityX = 5000;
   camera.angularSensibilityY = 5000;
 
@@ -108,20 +106,25 @@
   panoMat.specularColor = new BABYLON.Color3(0, 0, 0);
   sphere.material = panoMat;
 
-  let glbMesh = null;
+  let glbMeshes = [];
+
   BABYLON.SceneLoader.ImportMesh("", "./", "socleetoiletoque.glb", scene, function (meshes) {
-    glbMesh = meshes[0];
-    glbMesh.scaling = new BABYLON.Vector3(20, 20, 20);
-    glbMesh.position = new BABYLON.Vector3(0, 0, 498);
+    glbMeshes = meshes;
+    glbMeshes.forEach(mesh => {
+      mesh.scaling = new BABYLON.Vector3(20, 20, 20);
+      mesh.position = new BABYLON.Vector3(0, 0, 498);
+    });
   });
 
-  // Vidéo au clic sur le glb
   scene.onPointerObservable.add((pointerInfo) => {
-    if (pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh === glbMesh) {
-      const container = document.getElementById("videoContainer");
-      const frame = document.getElementById("youtubeFrame");
-      frame.src = "https://www.youtube.com/embed/Jgcb7hjdgaU?autoplay=1";
-      container.style.display = "block";
+    if (pointerInfo.pickInfo.hit) {
+      const picked = pointerInfo.pickInfo.pickedMesh;
+      if (glbMeshes.includes(picked)) {
+        const container = document.getElementById("videoContainer");
+        const frame = document.getElementById("youtubeFrame");
+        frame.src = "https://www.youtube.com/embed/Jgcb7hjdgaU?autoplay=1";
+        container.style.display = "block";
+      }
     }
   }, BABYLON.PointerEventTypes.POINTERPICK);
 
@@ -137,9 +140,10 @@
   engine.runRenderLoop(() => {
     scene.render();
 
-    if (glbMesh) {
+    if (glbMeshes.length) {
+      // On projette la position du premier mesh pour placer le texte (tu peux ajuster si besoin)
       const pos = BABYLON.Vector3.Project(
-        glbMesh.position,
+        glbMeshes[0].position,
         BABYLON.Matrix.Identity(),
         scene.getTransformMatrix(),
         camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
