@@ -1,66 +1,108 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Panorama 360° + GLB</title>
+  <meta charset="utf-8">
+  <title>Panorama 360° + Modèle 3D</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Pannellum -->
+  <script src="https://cdn.pannellum.org/2.5/pannellum.js"></script>
+  <link rel="stylesheet" href="https://cdn.pannellum.org/2.5/pannellum.css">
+
+  <!-- Three.js -->
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
+    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/GLTFLoader.js';
+
+    window.THREE = THREE;
+    window.GLTFLoader = GLTFLoader;
+  </script>
+
   <style>
-    html, body { margin: 0; overflow: hidden; height: 100%; }
-    canvas { width: 100%; height: 100%; display: block; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    #panorama, #three-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .pnlm-container {
+      background-image: none !important;
+      background-color: black !important;
+    }
   </style>
-  <!-- Babylon.js CDN -->
-  <script src="https://cdn.babylonjs.com/babylon.js"></script>
-  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 </head>
 <body>
-<canvas id="renderCanvas"></canvas>
+
+<div id="panorama"></div>
+<canvas id="three-canvas"></canvas>
 
 <script>
-  // Initialisation
-  const canvas = document.getElementById("renderCanvas");
-  const engine = new BABYLON.Engine(canvas, true);
-
-  const createScene = async () => {
-    const scene = new BABYLON.Scene(engine);
-
-    // Caméra orbitale
-    const camera = new BABYLON.ArcRotateCamera("camera", Math.PI, Math.PI / 2, 5, BABYLON.Vector3.Zero(), scene);
-    camera.attachControl(canvas, true);
-    camera.wheelDeltaPercentage = 0.01; // Zoom fluide
-
-    // Lumière
-    const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-
-    // Arrière-plan panoramique
-    const photoDome = new BABYLON.PhotoDome(
-      "panorama",
-      "test.png",
-      {
-        resolution: 32,
-        size: 1000,
-      },
-      scene
-    );
-
-    // Chargement du modèle .glb
-    await BABYLON.SceneLoader.ImportMeshAsync("", "./", "socleetoiletoque.glb", scene).then((result) => {
-      const glb = result.meshes[0];
-      glb.position = new BABYLON.Vector3(0, 0, -5); // Un peu en profondeur
-      glb.scaling = new BABYLON.Vector3(1, 1, 1);   // Adapter au besoin
-    });
-
-    return scene;
-  };
-
-  createScene().then((scene) => {
-    engine.runRenderLoop(() => {
-      scene.render();
-    });
-  });
-
-  window.addEventListener("resize", () => {
-    engine.resize();
+  const viewer = pannellum.viewer('panorama', {
+    type: 'equirectangular',
+    panorama: 'test.png',
+    autoLoad: true,
+    autoRotate: -2,
+    showZoomCtrl: true,
+    keyboardZoom: true,
+    mouseZoom: true,
+    maxPitch: 90,
+    minPitch: -90,
+    backgroundColor: [0, 0, 0]
   });
 </script>
+
+<script type="module">
+  const canvas = document.getElementById('three-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+
+  const scene = new THREE.Scene();
+
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.z = 0; // On ne bouge pas la caméra (vue fixe), on oriente la scène
+
+  const loader = new GLTFLoader();
+  loader.load('socleetoiletoque.glb', (gltf) => {
+    const model = gltf.scene;
+    model.position.set(0, 0, -5);  // Un peu en profondeur
+    model.scale.set(1, 1, 1);      // Adapter si nécessaire
+    scene.add(model);
+  });
+
+  // Redimensionnement dynamique
+  window.addEventListener('resize', () => {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+  });
+
+  // Synchroniser avec la caméra Pannellum
+  function animate() {
+    requestAnimationFrame(animate);
+
+    const yaw = viewer.getYaw() * Math.PI / 180;
+    const pitch = viewer.getPitch() * Math.PI / 180;
+    const fov = viewer.getHfov();
+
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
+
+    // Simulation d’une caméra tournant autour d’un objet
+    const q = new THREE.Quaternion()
+      .setFromEuler(new THREE.Euler(-pitch, -yaw, 0, 'YXZ'));
+    scene.setRotationFromQuaternion(q);
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+</script>
+
 </body>
 </html>
