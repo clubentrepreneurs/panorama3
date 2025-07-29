@@ -2,13 +2,18 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Panorama + GLB + Texte suivi</title>
+  <title>Panorama + GLB + Texte suivi + Zoom tactile optimisé</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <style>
     html, body {
       margin: 0; overflow: hidden; height: 100%; touch-action: none;
+      -webkit-user-select: none; /* Empêche sélection sur mobile */
+      -ms-user-select: none;
+      user-select: none;
     }
     #renderCanvas {
       width: 100%; height: 100%; display: block;
+      touch-action: none;
     }
     #videoContainer {
       position: absolute;
@@ -18,6 +23,7 @@
       aspect-ratio: 16/9;
       display: none;
       z-index: 10;
+      background: black;
     }
     #videoContainer iframe {
       width: 100%; height: 100%;
@@ -31,6 +37,7 @@
       padding: 8px 12px;
       cursor: pointer;
       font-size: 16px;
+      z-index: 15;
     }
     #overlayText {
       position: absolute;
@@ -63,21 +70,29 @@
   const engine = new BABYLON.Engine(canvas, true);
   const scene = new BABYLON.Scene(engine);
 
+  // Empêche zoom natif navigateur sur mobile (pinch)
+  canvas.style.touchAction = "none";
+  canvas.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
   const camera = new BABYLON.ArcRotateCamera("cam",
     Math.PI / 2, Math.PI / 2.5, 300,
     new BABYLON.Vector3(0, 0, 0), scene);
-  
-  // Réduire la sensibilité du déplacement tactile (rotation)
-camera.angularSensibilityX = 5000; // sensibilité horizontale, plus grand = moins sensible
-camera.angularSensibilityY = 5000; // sensibilité verticale
-
-  camera.attachControl(canvas, true);
 
   camera.pinchDeltaPercentage = 0.003;
   camera.wheelDeltaPercentage = 0.005;
   camera.lowerRadiusLimit = 150;
   camera.upperRadiusLimit = 600;
   camera.panningSensibility = 2500;
+
+  // Moins sensible aux déplacements tactiles
+  camera.angularSensibilityX = 5000;
+  camera.angularSensibilityY = 5000;
+
+  camera.attachControl(canvas, true);
 
   new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
 
@@ -96,11 +111,11 @@ camera.angularSensibilityY = 5000; // sensibilité verticale
   let glbMesh = null;
   BABYLON.SceneLoader.ImportMesh("", "./", "socleetoiletoque.glb", scene, function (meshes) {
     glbMesh = meshes[0];
-    glbMesh.scaling = new BABYLON.Vector3(20, 20, 20); // plus gros
+    glbMesh.scaling = new BABYLON.Vector3(20, 20, 20);
     glbMesh.position = new BABYLON.Vector3(0, 0, 498);
   });
 
-  // Vidéo au clic
+  // Vidéo au clic sur le glb
   scene.onPointerObservable.add((pointerInfo) => {
     if (pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh === glbMesh) {
       const container = document.getElementById("videoContainer");
@@ -123,7 +138,6 @@ camera.angularSensibilityY = 5000; // sensibilité verticale
     scene.render();
 
     if (glbMesh) {
-      // Projecter la position 3D du glb en coordonnées 2D écran
       const pos = BABYLON.Vector3.Project(
         glbMesh.position,
         BABYLON.Matrix.Identity(),
@@ -131,7 +145,7 @@ camera.angularSensibilityY = 5000; // sensibilité verticale
         camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
       );
       overlayText.style.left = `${pos.x}px`;
-      overlayText.style.top = `${pos.y + 30}px`; // 30px sous le modèle
+      overlayText.style.top = `${pos.y + 30}px`;
     }
   });
 
