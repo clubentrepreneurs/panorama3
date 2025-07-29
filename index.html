@@ -83,16 +83,18 @@
 
   camera.pinchDeltaPercentage = 0.003;
   camera.wheelDeltaPercentage = 0.005;
-  camera.lowerRadiusLimit = 150;  // zoom max proche
-  camera.upperRadiusLimit = 400;  // dé-zoom max limité pour ne pas trop éloigner
+  camera.lowerRadiusLimit = 150;
+  camera.upperRadiusLimit = 400;
 
   camera.panningSensibility = 2500;
   camera.angularSensibilityX = 5000;
   camera.angularSensibilityY = 5000;
-
   camera.attachControl(canvas, true);
 
-  new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
+  // Lumière homogène
+  scene.ambientColor = new BABYLON.Color3(1, 1, 1); // Éclairage ambiant global
+  const light = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-1, -2, -1), scene);
+  light.intensity = 0.5;
 
   const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {
     segments: 64,
@@ -137,25 +139,24 @@
 
   const overlayText = document.getElementById("overlayText");
 
- engine.runRenderLoop(() => {
-  scene.render();
+  engine.runRenderLoop(() => {
+    scene.render();
 
-  if (glbMeshes.length) {
-    const mesh = glbMeshes[0];
-    const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
+    if (glbMeshes.length) {
+      const mesh = glbMeshes[0];
+      const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
 
-    const pos = BABYLON.Vector3.Project(
-      worldCenter,
-      BABYLON.Matrix.Identity(),
-      scene.getTransformMatrix(),
-      camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
-    );
+      const pos = BABYLON.Vector3.Project(
+        worldCenter,
+        BABYLON.Matrix.Identity(),
+        scene.getTransformMatrix(),
+        camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
+      );
 
-    overlayText.style.left = `${pos.x}px`;
-    overlayText.style.top = `${pos.y + 10}px`;
-  }
-});
-
+      overlayText.style.left = `${pos.x}px`;
+      overlayText.style.top = `${pos.y + 10}px`;
+    }
+  });
 
   window.addEventListener("resize", () => {
     engine.resize();
