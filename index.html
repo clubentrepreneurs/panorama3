@@ -83,10 +83,10 @@
 
   camera.pinchDeltaPercentage = 0.003;
   camera.wheelDeltaPercentage = 0.005;
-  camera.lowerRadiusLimit = 150;
-  camera.upperRadiusLimit = 600;
-  camera.panningSensibility = 2500;
+  camera.lowerRadiusLimit = 150;  // zoom max proche
+  camera.upperRadiusLimit = 400;  // dé-zoom max limité pour ne pas trop éloigner
 
+  camera.panningSensibility = 2500;
   camera.angularSensibilityX = 5000;
   camera.angularSensibilityY = 5000;
 
@@ -141,7 +141,6 @@
     scene.render();
 
     if (glbMeshes.length) {
-      // On projette la position du premier mesh pour placer le texte (tu peux ajuster si besoin)
       const pos = BABYLON.Vector3.Project(
         glbMeshes[0].position,
         BABYLON.Matrix.Identity(),
