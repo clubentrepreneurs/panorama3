@@ -57,24 +57,25 @@
 
       // Chargement du modèle .glb
       BABYLON.SceneLoader.ImportMesh(
-        null, "./", "socleetoiletoque.glb", scene,
-        function (meshes) {
-          const model = meshes[0]; // le root mesh
+  null, "./", "socleetoiletoque.glb", scene,
+  function (meshes) {
+    const model = meshes[0];
 
-          // Positionner le modèle en avant de la caméra
-          model.position = new BABYLON.Vector3(0, 0, -5); // un peu en profondeur
+    // Place le modèle très proche de la caméra
+    model.position = new BABYLON.Vector3(0, 0, 0.01); // 👈 très proche
 
-          // Le rattacher à la caméra pour qu’il suive ses mouvements
-          camera.addChild(model);
+    // Agrandis le modèle pour qu’il soit bien visible
+    model.scaling.scaleInPlace(10); // 👈 très grand
 
-          // Optionnel : réduire la taille si le modèle est trop grand
-          model.scaling.scaleInPlace(0.5);
-        },
-        null,
-        function (scene, message, exception) {
-          console.error("Erreur chargement GLB :", message, exception);
-        }
-      );
+    // Attache à la caméra pour suivre tous les mouvements
+    camera.addChild(model);
+  },
+  null,
+  function (scene, message, exception) {
+    console.error("Erreur chargement GLB :", message, exception);
+  }
+);
+
 
       engine.runRenderLoop(() => {
         scene.render();
