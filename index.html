@@ -46,7 +46,7 @@
       color: white;
       text-align: center;
       width: 100%;
-      top: calc(50% + 120px); /* juste sous le glb */
+      top: calc(50% + 120px); /* sous le glb */
       font-size: 1.2em;
       text-shadow: 1px 1px 4px black;
       pointer-events: none;
@@ -65,6 +65,7 @@
   <iframe id="youtubeFrame" src="" frameborder="0" allowfullscreen></iframe>
 </div>
 
+<!-- Babylon.js CDN -->
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
 <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 
@@ -73,13 +74,13 @@
   const engine = new BABYLON.Engine(canvas, true);
   const scene = new BABYLON.Scene(engine);
 
-  // Créer une caméra orbitale
+  // Caméra orbitale
   const camera = new BABYLON.ArcRotateCamera("cam",
     Math.PI / 2, Math.PI / 2.5, 300,
     new BABYLON.Vector3(0, 0, 0), scene);
   camera.attachControl(canvas, true);
 
-  // 🔧 Adoucir zoom et limiter les extrêmes
+  // 🔧 Zoom adouci
   camera.pinchDeltaPercentage = 0.003;
   camera.wheelDeltaPercentage = 0.005;
   camera.lowerRadiusLimit = 150;
@@ -89,7 +90,7 @@
   // Lumière
   new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
 
-  // Sphere panoramique
+  // Sphère panoramique
   const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {
     segments: 64,
     diameter: 1000,
@@ -98,24 +99,19 @@
 
   const panoMat = new BABYLON.StandardMaterial("panoMat", scene);
   panoMat.diffuseTexture = new BABYLON.Texture("test.png", scene);
-  panoMat.diffuseTexture.wrapU = BABYLON.Texture.CLAMP_ADDRESSMODE;
-  panoMat.diffuseTexture.wrapV = BABYLON.Texture.CLAMP_ADDRESSMODE;
   panoMat.backFaceCulling = false;
   panoMat.specularColor = new BABYLON.Color3(0, 0, 0);
   sphere.material = panoMat;
 
-  // Charger le modèle GLB
+  // Charger le .glb
   let glbMesh = null;
   BABYLON.SceneLoader.ImportMesh("", "./", "socleetoiletoque.glb", scene, function (meshes) {
     glbMesh = meshes[0];
     glbMesh.scaling = new BABYLON.Vector3(10, 10, 10);
-    glbMesh.position = new BABYLON.Vector3(0, 0, 300);
-
-    // Rattacher à la caméra
-    camera.target = glbMesh.position;
+    glbMesh.position = new BABYLON.Vector3(0, 0, 498); // presque collé à la sphère intérieure
   });
 
-  // Clique sur le glb = ouvrir vidéo
+  // Cliquez sur le glb = ouvrir vidéo
   scene.onPointerObservable.add((pointerInfo) => {
     if (pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh === glbMesh) {
       const container = document.getElementById("videoContainer");
@@ -125,7 +121,7 @@
     }
   }, BABYLON.PointerEventTypes.POINTERPICK);
 
-  // Fermer la vidéo
+  // Fermer vidéo
   document.getElementById("closeButton").addEventListener("click", () => {
     const container = document.getElementById("videoContainer");
     const frame = document.getElementById("youtubeFrame");
