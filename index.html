@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Zoom par pincement Babylon.js</title>
+  <title>Panorama 360° avec zoom tactile</title>
   <style>
     html, body {
       margin: 0;
@@ -26,23 +26,34 @@
     const engine = new BABYLON.Engine(canvas, true);
     const scene = new BABYLON.Scene(engine);
 
+    // 📷 Caméra interactive
     const camera = new BABYLON.ArcRotateCamera("camera",
       Math.PI / 2, Math.PI / 2, 3,
       BABYLON.Vector3.Zero(), scene);
     camera.attachControl(canvas, true);
 
-    // ✅ Activer le zoom par pincement
+    // ✅ Zoom par pincement
     camera.inputs.attached.pointers.pinchToZoom = true;
     camera.inputs.attached.pointers.multiTouchZoom = true;
     camera.lowerRadiusLimit = 1;
     camera.upperRadiusLimit = 10;
     camera.pinchPrecision = 100;
 
+    // 💡 Lumière
     const light = new BABYLON.HemisphericLight("light",
       new BABYLON.Vector3(0, 1, 0), scene);
 
+    // 🌐 Sphère inversée pour vue intérieure
     const sphere = BABYLON.MeshBuilder.CreateSphere("sphere",
-      { diameter: 1 }, scene);
+      { diameter: 1000, segments: 64 }, scene);
+    sphere.scaling = new BABYLON.Vector3(-1, 1, 1); // Inversion pour vue intérieure
+
+    // 🖼️ Texture panoramique
+    const material = new BABYLON.StandardMaterial("panoramaMat", scene);
+    material.diffuseTexture = new BABYLON.Texture("test.png", scene); // Remplace par ton fichier
+    material.diffuseTexture.uScale = -1; // Corrige l'orientation
+    material.backFaceCulling = false;    // Affiche l'intérieur
+    sphere.material = material;
 
     engine.runRenderLoop(() => scene.render());
     window.addEventListener("resize", () => engine.resize());
