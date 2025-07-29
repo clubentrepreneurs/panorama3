@@ -92,10 +92,10 @@
 
   // Lumière homogène
   const hemiLight = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-  hemiLight.intensity = 1.0;
+  hemiLight.intensity = 10.0;
 
   const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(0, 0, -1), scene);
-  dirLight.intensity = 0.4;
+  dirLight.intensity = 10.4;
 
   // Sphère panoramique
   const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {
