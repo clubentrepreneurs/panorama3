@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Panorama 360° avec Babylon.js</title>
+  <title>Panorama + GLB avec Babylon.js</title>
   <style>
     html, body {
       margin: 0;
@@ -27,26 +27,24 @@
 
   <script>
     window.addEventListener('DOMContentLoaded', function () {
-      // Rendu
       const canvas = document.getElementById('renderCanvas');
       const engine = new BABYLON.Engine(canvas, true);
 
-      // Scène
       const scene = new BABYLON.Scene(engine);
       scene.clearColor = new BABYLON.Color3.Black();
 
-      // Caméra libre contrôlable
+      // Caméra orbitale (libre)
       const camera = new BABYLON.ArcRotateCamera("cam",
         Math.PI / 2, Math.PI / 2, 5,
         new BABYLON.Vector3(0, 0, 0),
         scene);
       camera.attachControl(canvas, true);
-      camera.wheelDeltaPercentage = 0.01; // Zoom plus fluide
+      camera.wheelDeltaPercentage = 0.01;
 
       // Lumière
       const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
 
-      // Texture panoramique
+      // Panorama
       const photoDome = new BABYLON.PhotoDome(
         "panorama",
         "test.png",
@@ -57,12 +55,31 @@
         scene
       );
 
-      // Boucle de rendu
+      // Chargement du modèle .glb
+      BABYLON.SceneLoader.ImportMesh(
+        null, "./", "socleetoiletoque.glb", scene,
+        function (meshes) {
+          const model = meshes[0]; // le root mesh
+
+          // Positionner le modèle en avant de la caméra
+          model.position = new BABYLON.Vector3(0, 0, 2); // un peu en profondeur
+
+          // Le rattacher à la caméra pour qu’il suive ses mouvements
+          camera.addChild(model);
+
+          // Optionnel : réduire la taille si le modèle est trop grand
+          model.scaling.scaleInPlace(0.5);
+        },
+        null,
+        function (scene, message, exception) {
+          console.error("Erreur chargement GLB :", message, exception);
+        }
+      );
+
       engine.runRenderLoop(() => {
         scene.render();
       });
 
-      // Resize
       window.addEventListener('resize', () => {
         engine.resize();
       });
