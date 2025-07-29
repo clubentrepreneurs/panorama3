@@ -2,16 +2,68 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Panorama + .glb Babylon</title>
+  <title>Panorama + GLB + Vidéo</title>
   <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
-    canvas { width: 100%; height: 100%; display: block; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #videoOverlay {
+      display: none;
+      position: fixed;
+      top: 25%;
+      left: 25%;
+      width: 50%;
+      height: 50%;
+      z-index: 999;
+      background-color: rgba(0, 0, 0, 0.9);
+      box-shadow: 0 0 30px black;
+      border-radius: 12px;
+    }
+
+    #videoOverlay iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 12px;
+    }
+
+    #closeButton {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      color: white;
+      font-size: 20px;
+      font-family: sans-serif;
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    #closeButton:hover {
+      color: #ccc;
+    }
   </style>
 </head>
 <body>
   <canvas id="renderCanvas"></canvas>
 
-  <!-- Babylon.js CDN -->
+  <!-- Fenêtre vidéo -->
+  <div id="videoOverlay">
+    <div id="closeButton">✖</div>
+    <iframe id="videoFrame" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+  </div>
+
+  <!-- BabylonJS -->
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 
@@ -23,9 +75,8 @@
 
       // Lumière
       const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-      light.intensity = 1;
 
-      // Caméra orbitale
+      // Caméra
       const camera = new BABYLON.ArcRotateCamera("cam",
         Math.PI / 2, Math.PI / 2.5, 10,
         new BABYLON.Vector3(0, 0, 0), scene);
@@ -37,35 +88,46 @@
       // Panorama
       const dome = new BABYLON.PhotoDome(
         "testDome",
-        "test.png", // ton image equirectangulaire
+        "test.png",
         {
           resolution: 32,
-          size: 1000, // diamètre de la sphère
+          size: 500 // Taille ajustable
         },
         scene
       );
 
-      // Chargement du modèle .glb
+      // Chargement du modèle GLB
       BABYLON.SceneLoader.ImportMesh(
         null, "./", "socleetoiletoque.glb", scene,
         function (meshes) {
           const model = meshes[0];
-
-          // Taille visible à distance
-          model.scaling = new BABYLON.Vector3(50, 50, 50);
-
-          // Place l’objet proche de la paroi intérieure du panorama
-          const distance = -490; // intérieur de la sphère
-          model.position = new BABYLON.Vector3(0, 0, distance);
-
-          // Orientation face caméra
+          model.scaling = new BABYLON.Vector3(25, 25, 25);
+          model.position = new BABYLON.Vector3(0, 0, -240);
           model.rotation = new BABYLON.Vector3(0, Math.PI, 0);
+
+          // Interaction clic
+          model.actionManager = new BABYLON.ActionManager(scene);
+          model.actionManager.registerAction(
+            new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
+              const overlay = document.getElementById('videoOverlay');
+              const iframe = document.getElementById('videoFrame');
+
+              iframe.src = "https://www.youtube.com/embed/Jgcb7hjdgaU?autoplay=1";
+              overlay.style.display = 'block';
+            })
+          );
         },
         null,
         function (scene, message, exception) {
           console.error("Erreur de chargement :", message);
         }
       );
+
+      // Fermer la vidéo
+      document.getElementById('closeButton').addEventListener('click', function () {
+        document.getElementById('videoOverlay').style.display = 'none';
+        document.getElementById('videoFrame').src = "";
+      });
 
       engine.runRenderLoop(() => scene.render());
       window.addEventListener('resize', () => engine.resize());
