@@ -7,7 +7,7 @@
   <style>
     html, body {
       margin: 0; overflow: hidden; height: 100%; touch-action: none;
-      -webkit-user-select: none; 
+      -webkit-user-select: none;
       -ms-user-select: none;
       user-select: none;
     }
@@ -48,7 +48,7 @@
       pointer-events: none;
       z-index: 5;
       white-space: nowrap;
-      display: none; /* L'overlay est caché par défaut */
+      display: none; /* Caché par défaut */
     }
   </style>
 </head>
@@ -71,13 +71,6 @@
   const engine = new BABYLON.Engine(canvas, true);
   const scene = new BABYLON.Scene(engine);
 
-  canvas.style.touchAction = "none";
-  canvas.addEventListener('touchstart', function(e) {
-    if (e.touches.length > 1) {
-      e.preventDefault();
-    }
-  }, { passive: false });
-
   const camera = new BABYLON.ArcRotateCamera("cam",
     Math.PI / 2, Math.PI / 2.5, 300,
     new BABYLON.Vector3(0, 0, 0), scene);
@@ -91,7 +84,7 @@
   camera.angularSensibilityY = 5000;
   camera.attachControl(canvas, true);
 
-  // Lumière homogène
+  // Lumière
   const hemiLight = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
   hemiLight.intensity = 10.0;
 
@@ -112,7 +105,7 @@
   panoMat.ambientColor = new BABYLON.Color3(1, 1, 1);
   sphere.material = panoMat;
 
-  // Import GLB
+  // GLB + Overlay
   let glbMeshes = [];
   const overlayText = document.getElementById("overlayText");
 
@@ -122,10 +115,10 @@
       mesh.scaling = new BABYLON.Vector3(20, 20, 20);
       mesh.position = new BABYLON.Vector3(0, 0, 498);
     });
-    overlayText.style.display = "block"; // Affiche le texte seulement après chargement
+    overlayText.style.display = "block"; // Affiche le texte après chargement
   });
 
-  // Clic sur GLB = ouvrir vidéo
+  // Clic = vidéo
   scene.onPointerObservable.add((pointerInfo) => {
     if (pointerInfo.pickInfo.hit) {
       const picked = pointerInfo.pickInfo.pickedMesh;
@@ -145,7 +138,7 @@
     container.style.display = "none";
   });
 
-  // Animation & overlay
+  // Animation + overlay suivi & visibilité
   engine.runRenderLoop(() => {
     scene.render();
 
@@ -160,8 +153,20 @@
         camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
       );
 
-      overlayText.style.left = `${pos.x}px`;
-      overlayText.style.top = `${pos.y + 10}px`;
+      // Test si visible
+      const dirToMesh = worldCenter.subtract(camera.position).normalize();
+      const cameraDir = camera.getTarget().subtract(camera.position).normalize();
+      const angle = BABYLON.Vector3.Dot(dirToMesh, cameraDir);
+
+      const isVisible = angle > 0.5 && pos.z > 0;
+
+      if (isVisible) {
+        overlayText.style.left = `${pos.x}px`;
+        overlayText.style.top = `${pos.y + 10}px`;
+        overlayText.style.display = "block";
+      } else {
+        overlayText.style.display = "none";
+      }
     }
   });
 
