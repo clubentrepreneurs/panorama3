@@ -2,61 +2,60 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Vue 360° avec Three.js</title>
+  <title>Vue 360° interactive</title>
   <style>
     body { margin: 0; overflow: hidden; }
-    canvas { display: block; }
+    canvas { display: block; touch-action: none; }
   </style>
+  <!-- Three.js -->
   <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+  <!-- OrbitControls -->
+  <script src="https://unpkg.com/three@0.152.2/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
   <script>
     // 🧱 Scène, caméra, rendu
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer();
+    camera.position.set(0, 0, 0.1); // Légèrement décalé pour OrbitControls
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
+
+    // 🎮 Contrôles interactifs
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableZoom = true;
+    controls.enablePan = false;
+    controls.enableDamping = true;
+    controls.rotateSpeed = 0.3;
+    controls.zoomSpeed = 0.5;
+    controls.minDistance = 0.05;
+    controls.maxDistance = 5;
+    controls.enableTouchZoom = true;
+    controls.enableTouchRotate = true;
 
     // 🌐 Texture panoramique
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load('test.png', function(texture) {
       const geometry = new THREE.SphereGeometry(500, 60, 40);
-      geometry.scale(-1, 1, 1); // Inverser la sphère pour vue intérieure
+      geometry.scale(-1, 1, 1); // Vue intérieure
 
       const material = new THREE.MeshBasicMaterial({ map: texture });
       const sphere = new THREE.Mesh(geometry, material);
       scene.add(sphere);
     });
 
-    // 🎮 Contrôles de rotation automatique
-    camera.position.set(0, 0, 0);
-    let lon = 0, lat = 0;
-
+    // 🌀 Animation
     function animate() {
       requestAnimationFrame(animate);
-      lon += 0.1;
-      lat = Math.max(-85, Math.min(85, lat));
-      const phi = THREE.MathUtils.degToRad(90 - lat);
-      const theta = THREE.MathUtils.degToRad(lon);
-
-      camera.lookAt(
-        500 * Math.sin(phi) * Math.cos(theta),
-        500 * Math.cos(phi),
-        500 * Math.sin(phi) * Math.sin(theta)
-      );
-
+      controls.update();
       renderer.render(scene, camera);
     }
 
     animate();
 
-    // 🖱️ Optionnel : interaction souris
-    document.addEventListener('mousemove', function(event) {
-      lon = (event.clientX / window.innerWidth) * 360;
-      lat = (event.clientY / window.innerHeight) * 180 - 90;
-    });
-
+    // 📱 Responsive
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
