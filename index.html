@@ -66,6 +66,11 @@
   const camera = new BABYLON.ArcRotateCamera("cam",
     Math.PI / 2, Math.PI / 2.5, 300,
     new BABYLON.Vector3(0, 0, 0), scene);
+  
+  // Réduire la sensibilité du déplacement tactile (rotation)
+camera.angularSensibilityX = 5000; // sensibilité horizontale, plus grand = moins sensible
+camera.angularSensibilityY = 5000; // sensibilité verticale
+
   camera.attachControl(canvas, true);
 
   camera.pinchDeltaPercentage = 0.003;
