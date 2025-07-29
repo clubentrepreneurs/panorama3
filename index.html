@@ -56,25 +56,29 @@
       );
 
       // Chargement du modèle .glb
-      BABYLON.SceneLoader.ImportMesh(
+     BABYLON.SceneLoader.ImportMesh(
   null, "./", "socleetoiletoque.glb", scene,
   function (meshes) {
     const model = meshes[0];
 
-    // Place le modèle très proche de la caméra
-    model.position = new BABYLON.Vector3(0, 0, 0.01); // 👈 très proche
+    // Définir le rayon intérieur du PhotoDome
+    const sphereRadius = 500;
 
-    // Agrandis le modèle pour qu’il soit bien visible
-    model.scaling.scaleInPlace(10); // 👈 très grand
+    // Placer le modèle sur la paroi "devant" la caméra (axe Z)
+    model.position = new BABYLON.Vector3(0, 0, -sphereRadius + 5); // collé à l'intérieur
 
-    // Attache à la caméra pour suivre tous les mouvements
-    camera.addChild(model);
+    // Tourner le modèle pour qu’il soit bien orienté
+    model.rotation = new BABYLON.Vector3(0, Math.PI, 0); // selon ton modèle
+
+    // Échelle adaptée à sa position
+    model.scaling.scaleInPlace(30);
   },
   null,
   function (scene, message, exception) {
     console.error("Erreur chargement GLB :", message, exception);
   }
 );
+
 
 
       engine.runRenderLoop(() => {
