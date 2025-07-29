@@ -2,64 +2,67 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Vue 360° interactive</title>
+  <title>Panorama 360° avec Babylon.js</title>
   <style>
-    body { margin: 0; overflow: hidden; }
-    canvas { display: block; touch-action: none; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+    #renderCanvas {
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
   </style>
-  <!-- Three.js -->
-  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
-  <!-- OrbitControls -->
-  <script src="https://unpkg.com/three@0.152.2/examples/js/controls/OrbitControls.js"></script>
+  <!-- Babylon.js CDN -->
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
 </head>
 <body>
+  <canvas id="renderCanvas"></canvas>
+
   <script>
-    // 🧱 Scène, caméra, rendu
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 0, 0.1); // Légèrement décalé pour OrbitControls
+    // 🔧 Initialisation Babylon
+    const canvas = document.getElementById("renderCanvas");
+    const engine = new BABYLON.Engine(canvas, true);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    const createScene = function () {
+      const scene = new BABYLON.Scene(engine);
 
-    // 🎮 Contrôles interactifs
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableZoom = true;
-    controls.enablePan = false;
-    controls.enableDamping = true;
-    controls.rotateSpeed = 0.3;
-    controls.zoomSpeed = 0.5;
-    controls.minDistance = 0.05;
-    controls.maxDistance = 5;
-    controls.enableTouchZoom = true;
-    controls.enableTouchRotate = true;
+      // 📷 Caméra ArcRotate (interactive)
+      const camera = new BABYLON.ArcRotateCamera("Camera", Math.PI / 2, Math.PI / 2, 1, BABYLON.Vector3.Zero(), scene);
+      camera.attachControl(canvas, true);
+      camera.minZ = 0.01;
+      camera.wheelPrecision = 50;
+      camera.pinchPrecision = 50;
+      camera.lowerRadiusLimit = 0.1;
+      camera.upperRadiusLimit = 5;
 
-    // 🌐 Texture panoramique
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.load('test.png', function(texture) {
-      const geometry = new THREE.SphereGeometry(500, 60, 40);
-      geometry.scale(-1, 1, 1); // Vue intérieure
+      // 💡 Lumière (nécessaire même si basique)
+      const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-      const material = new THREE.MeshBasicMaterial({ map: texture });
-      const sphere = new THREE.Mesh(geometry, material);
-      scene.add(sphere);
+      // 🌐 Sphère inversée avec texture
+      const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", { segments: 64, diameter: 1000 }, scene);
+      sphere.scaling = new BABYLON.Vector3(-1, 1, 1); // Inverser pour vue intérieure
+
+      const material = new BABYLON.StandardMaterial("panoramaMat", scene);
+      material.diffuseTexture = new BABYLON.Texture("test.png", scene);
+      material.diffuseTexture.uScale = -1; // Corriger orientation
+      material.backFaceCulling = false;
+      sphere.material = material;
+
+      return scene;
+    };
+
+    const scene = createScene();
+    engine.runRenderLoop(() => {
+      scene.render();
     });
 
-    // 🌀 Animation
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    }
-
-    animate();
-
-    // 📱 Responsive
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+    window.addEventListener("resize", () => {
+      engine.resize();
     });
   </script>
 </body>
