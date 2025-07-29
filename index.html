@@ -2,205 +2,62 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Panorama + GLB + Mobile Stable</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Panorama 360° et Modèle 3D</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      touch-action: none;
-      font-family: sans-serif;
-    }
-    canvas {
-      width: 100vw !important;
-      height: 100vh !important;
-      display: block;
-    }
-    #overlay {
-      position: absolute;
-      color: white;
-      font-size: 24px;
-      font-weight: bold;
-      pointer-events: none;
-      transform: translate(-50%, -100%);
-      z-index: 2;
-    }
-    #videoContainer {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 50%;
-      background-color: black;
-      z-index: 3;
-      display: none;
-    }
-    #videoContainer iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
+    body { margin: 0; display: flex; flex-direction: column; height: 100vh; }
+    #viewer360, #viewer3D { flex: 1; }
   </style>
+
+  <!-- Photo Sphere Viewer -->
+  <link rel="stylesheet" href="https://unpkg.com/photo-sphere-viewer@5/dist/photo-sphere-viewer.css">
+  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+  <script src="https://unpkg.com/photo-sphere-viewer@5/dist/photo-sphere-viewer.js"></script>
+
+  <!-- Three.js for GLB -->
+  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.152.2/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
-  <canvas id="renderCanvas"></canvas>
-  <div id="overlay">4 incontournables</div>
-  <div id="videoContainer">
-    <iframe src="https://www.youtube.com/embed/Jgcb7hjdgaU?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-  </div>
 
-  <!-- Babylon.js -->
-  <script src="https://cdn.babylonjs.com/babylon.js"></script>
-  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+  <!-- Panorama 360° -->
+  <div id="viewer360"></div>
+
+  <!-- Modèle 3D -->
+  <div id="viewer3D"></div>
 
   <script>
-    const canvas = document.getElementById("renderCanvas");
-    const overlay = document.getElementById("overlay");
-    const videoContainer = document.getElementById("videoContainer");
-    const engine = new BABYLON.Engine(canvas, true);
-
-    async function createScene() {
-      const scene = new BABYLON.Scene(engine);
-
-      const camera = new BABYLON.ArcRotateCamera("camera",
-        Math.PI / 2, Math.PI / 2.5, 5,
-        new BABYLON.Vector3(0, 0, 0), scene);
-      camera.attachControl(canvas, true);
-      camera.wheelPrecision = 50;
-      camera.angularSensibilityX = 3000;
-      camera.angularSensibilityY = 3000;
-      camera.minZ = 0.1;
-
-      const light = new BABYLON.HemisphericLight("light",
-        new BABYLON.Vector3(0, 1, 0), scene);
-      light.intensity = 1;
-
-      const panorama = BABYLON.MeshBuilder.CreateSphere("panorama", {
-        segments: 64,
-        diameter: 1000,
-        sideOrientation: BABYLON.Mesh.BACKSIDE
-      }, scene);
-
-      const panoMaterial = new BABYLON.StandardMaterial("panoMat", scene);
-      const texture = new BABYLON.Texture("test.png", scene);
-      texture.uScale = -1;
-      texture.uOffset = 1;
-      texture.vScale = 1;
-      texture.coordinatesMode = BABYLON.Texture.FIXED_EQUIRECTANGULAR_MODE;
-
-      panoMaterial.diffuseTexture = texture;
-      panoMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
-      panoMaterial.backFaceCulling = false;
-      panorama.material = panoMaterial;
-
-      let model;
-      let modelMeshes = [];
-      let pulse1, pulse2;
-
-      await BABYLON.SceneLoader.ImportMeshAsync("", "./", "socleetoiletoque.glb", scene).then(result => {
-        model = result.meshes[0];
-        model.scaling = new BABYLON.Vector3(2, 2, 2);
-        modelMeshes = result.meshes;
-        modelMeshes.forEach(mesh => mesh.isPickable = true);
-
-        // 🔵 Cercles pulsants
-        const pulseMaterial = new BABYLON.StandardMaterial("pulseMat", scene);
-        pulseMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.6, 1);
-        pulseMaterial.alpha = 0.5;
-        pulseMaterial.backFaceCulling = false;
-        pulseMaterial.emissiveColor = new BABYLON.Color3(0.2, 0.6, 1);
-
-        pulse1 = BABYLON.MeshBuilder.CreateDisc("pulse1", { radius: 0.5, tessellation: 64 }, scene);
-        pulse2 = BABYLON.MeshBuilder.CreateDisc("pulse2", { radius: 0.5, tessellation: 64 }, scene);
-
-        pulse1.material = pulseMaterial;
-        pulse2.material = pulseMaterial;
-
-        pulse1.rotation.x = Math.PI / 2;
-        pulse2.rotation.x = Math.PI / 2;
-
-        pulse1.parent = model;
-        pulse2.parent = model;
-
-        pulse1.position.y = -1.5;
-        pulse2.position.y = -1.5;
-
-        const createPulseAnimation = (mesh, delay) => {
-          const anim = new BABYLON.Animation("pulseAnim", "scaling", 30,
-            BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
-            BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
-
-          const keys = [
-            { frame: 0, value: new BABYLON.Vector3(1, 1, 1) },
-            { frame: 30, value: new BABYLON.Vector3(2, 1, 2) },
-            { frame: 60, value: new BABYLON.Vector3(1, 1, 1) }
-          ];
-
-          anim.setKeys(keys);
-          mesh.animations = [anim];
-          scene.beginAnimation(mesh, delay, 60, true);
-        };
-
-        createPulseAnimation(pulse1, 0);
-        createPulseAnimation(pulse2, 15);
-      });
-
-      const targetDirection = new BABYLON.Vector3(0, 0, -1);
-      const distanceFromCenter = 8;
-      const verticalOffset = -3;
-
-      scene.onBeforeRenderObservable.add(() => {
-        if (!model) return;
-
-        const rotationMatrix = BABYLON.Matrix.RotationYawPitchRoll(
-          camera.alpha, camera.beta, 0
-        );
-        const rotatedDirection = BABYLON.Vector3.TransformCoordinates(targetDirection, rotationMatrix);
-
-        model.position = rotatedDirection.scale(distanceFromCenter).add(new BABYLON.Vector3(0, verticalOffset, 0));
-        model.lookAt(BABYLON.Vector3.Zero());
-      });
-
-      scene.onAfterRenderObservable.add(() => {
-        if (!model) return;
-
-        const pos = BABYLON.Vector3.Project(
-          model.getBoundingInfo().boundingSphere.centerWorld,
-          BABYLON.Matrix.Identity(),
-          scene.getTransformMatrix(),
-          camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
-        );
-
-        overlay.style.left = `${pos.x}px`;
-        overlay.style.top = `${pos.y}px`;
-      });
-
-      scene.onPointerObservable.add((pointerInfo) => {
-        if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERPICK) {
-          const pickedMesh = pointerInfo.pickInfo?.pickedMesh;
-          if (pickedMesh && modelMeshes.includes(pickedMesh)) {
-            videoContainer.style.display = "block";
-          }
-        }
-      });
-
-      return scene;
-    }
-
-    createScene().then(scene => {
-      engine.runRenderLoop(() => scene.render());
-      window.addEventListener("resize", () => engine.resize());
-      window.addEventListener("orientationchange", () => {
-        setTimeout(() => engine.resize(), 300);
-      });
-
-      if (window.innerHeight > window.innerWidth) {
-        alert("Pour une meilleure expérience, tournez votre appareil en mode paysage.");
-      }
+    // 🌐 Panorama 360°
+    const viewer = new PhotoSphereViewer.Viewer({
+      container: document.getElementById('viewer360'),
+      panorama: 'test.png',
+      defaultYaw: '130deg',
+      navbar: ['zoom', 'fullscreen'],
     });
+
+    // 🧊 Modèle 3D .glb
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight / 2), 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight / 2);
+    document.getElementById('viewer3D').appendChild(renderer.domElement);
+
+    const light = new THREE.HemisphereLight(0xffffff, 0x444444);
+    light.position.set(0, 20, 0);
+    scene.add(light);
+
+    const loader = new THREE.GLTFLoader();
+    loader.load('socleetoiletoque.glb', function (gltf) {
+      scene.add(gltf.scene);
+      gltf.scene.position.set(0, 0, 0);
+    });
+
+    camera.position.z = 5;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+    animate();
   </script>
 </body>
 </html>
