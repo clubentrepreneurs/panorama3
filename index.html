@@ -52,45 +52,49 @@
     }
 
     /* ==== Cercles animés ==== */
-    #circleContainer {
-      position: absolute;
-      width: 80px;  /* Taille du cercle */
-      height: 80px;
-      margin-left: -40px; /* Pour centrer sur la position X */
-      margin-top: -40px;  /* Pour centrer sur la position Y */
-      z-index: 6;
-      pointer-events: none;
-      display: none; /* Caché par défaut */
-    }
-    .circle {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      top: 0; left: 0;
-      animation: pulse 2s infinite;
-    }
-    .circle.fill {
-      background: rgba(255, 0, 0, 0.6);
-    }
-    .circle.stroke {
-      border: 4px solid rgba(255, 255, 255, 0.8);
-      background: transparent;
-      animation-delay: 1s; /* Décalage pour alterner */
-    }
+    
+     <style>
+  /* ==== Cercles animés corrigés ==== */
+  #circleContainer {
+    position: absolute;
+    width: 80px;   /* Taille du cercle */
+    height: 80px;
+    z-index: 6;
+    pointer-events: none;
+    display: none; /* Caché par défaut */
+  }
+  .circle {
+    position: absolute;
+    top: 50%; 
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    animation: pulse 2s infinite;
+  }
+  .circle.fill {
+    background: rgba(255, 0, 0, 0.6);
+  }
+  .circle.stroke {
+    border: 4px solid rgba(255, 255, 255, 0.8);
+    background: transparent;
+    animation-delay: 1s; /* Décalage pour alterner */
+  }
 
-    /* Animation grossit / dégrossit + clignote */
-    @keyframes pulse {
-      0%, 100% {
-        transform: scale(1);
-        opacity: 1;
-      }
-      50% {
-        transform: scale(1.3);
-        opacity: 0.3;
-      }
+  /* Animation grossit / dégrossit + clignote */
+  @keyframes pulse {
+    0%, 100% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
     }
-  </style>
+    50% {
+      transform: translate(-50%, -50%) scale(1.3);
+      opacity: 0.3;
+    }
+  }
+</style>
+
 </head>
 <body>
 
