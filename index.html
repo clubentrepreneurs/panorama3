@@ -56,9 +56,9 @@
       position: absolute;
       width: 40px;   /* Taille du cercle */
       height: 40px;
-      z-index: 6;
-      pointer-events: none;
+      z-index: 20; /* au-dessus du texte */
       display: none; /* Caché par défaut */
+      cursor: pointer; /* Indique cliquable */
     }
     .circle {
       position: absolute;
@@ -155,6 +155,8 @@
   let glbMeshes = [];
   const overlayText = document.getElementById("overlayText");
   const circleContainer = document.getElementById("circleContainer");
+  const videoContainer = document.getElementById("videoContainer");
+  const youtubeFrame = document.getElementById("youtubeFrame");
 
   BABYLON.SceneLoader.ImportMesh("", "./", "socleetoiletoque.glb", scene, function (meshes) {
     glbMeshes = meshes;
@@ -166,24 +168,27 @@
     circleContainer.style.display = "block"; // Active aussi le cercle
   });
 
-  // Clic = vidéo
+  // Clic sur le modèle = vidéo (ancien comportement)
   scene.onPointerObservable.add((pointerInfo) => {
     if (pointerInfo.pickInfo.hit) {
       const picked = pointerInfo.pickInfo.pickedMesh;
       if (glbMeshes.includes(picked)) {
-        const container = document.getElementById("videoContainer");
-        const frame = document.getElementById("youtubeFrame");
-        frame.src = "https://www.youtube.com/embed/Jgcb7hjdgaU?autoplay=1";
-        container.style.display = "block";
+        youtubeFrame.src = "https://www.youtube.com/embed/Jgcb7hjdgaU?autoplay=1";
+        videoContainer.style.display = "block";
       }
     }
   }, BABYLON.PointerEventTypes.POINTERPICK);
 
+  // Clic sur les cercles = nouvelle vidéo
+  circleContainer.addEventListener("click", () => {
+    youtubeFrame.src = "https://www.youtube.com/embed/lUU1G-6klpI?list=PLV8G_tL0jD2JNU3NqxIcULusdtMWeKL5k&autoplay=1";
+    videoContainer.style.display = "block";
+  });
+
+  // Bouton fermer
   document.getElementById("closeButton").addEventListener("click", () => {
-    const container = document.getElementById("videoContainer");
-    const frame = document.getElementById("youtubeFrame");
-    frame.src = "";
-    container.style.display = "none";
+    youtubeFrame.src = "";
+    videoContainer.style.display = "none";
   });
 
   // Animation + overlay suivi & visibilité
