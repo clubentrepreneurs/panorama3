@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Panorama + GLB + Texte suivi + Zoom tactile optimisé</title>
+  <title>Panorama + Cercles animés + Vidéo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <style>
     html, body {
@@ -39,24 +39,11 @@
       font-size: 16px;
       z-index: 15;
     }
-    #overlayText {
-      position: absolute;
-      color: white;
-      text-align: center;
-      font-size: 1.2em;
-      text-shadow: 1px 1px 4px black;
-      pointer-events: none;
-      z-index: 5;
-      white-space: nowrap;
-      display: none; /* Caché par défaut */
-    }
   </style>
 </head>
 <body>
 
 <canvas id="renderCanvas"></canvas>
-
-<div id="overlayText">Cliquez sur le modèle</div>
 
 <div id="videoContainer">
   <button id="closeButton">Fermer</button>
@@ -64,8 +51,6 @@
 </div>
 
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
-<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
-
 <script>
   const canvas = document.getElementById("renderCanvas");
   const engine = new BABYLON.Engine(canvas, true);
@@ -74,100 +59,82 @@
   const camera = new BABYLON.ArcRotateCamera("cam",
     Math.PI / 2, Math.PI / 2.5, 300,
     new BABYLON.Vector3(0, 0, 0), scene);
-
-  camera.pinchDeltaPercentage = 0.003;
-  camera.wheelDeltaPercentage = 0.005;
-  camera.lowerRadiusLimit = 150;
-  camera.upperRadiusLimit = 400;
-  camera.panningSensibility = 2500;
-  camera.angularSensibilityX = 5000;
-  camera.angularSensibilityY = 5000;
   camera.attachControl(canvas, true);
 
   // Lumière
-  const hemiLight = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-  hemiLight.intensity = 10.0;
+  const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+  light.intensity = 1.5;
 
-  const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(0, 0, -1), scene);
-  dirLight.intensity = 10.4;
+  // Paramètres cercles
+  const circlePosition = new BABYLON.Vector3(0, 0, 498);
+  const baseRadius = 10;
+  const pulseScale = 1.5;
+  const pulseSpeed = 2;
+  const blinkSpeed = 4;
 
-  // Sphère panoramique
-  const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {
-    segments: 64,
-    diameter: 1000,
+  // Matériaux
+  const filledMat = new BABYLON.StandardMaterial("filledMat", scene);
+  filledMat.diffuseColor = new BABYLON.Color3(1, 0, 0);
+  filledMat.emissiveColor = new BABYLON.Color3(1, 0, 0);
+
+  const outlineMat = new BABYLON.StandardMaterial("outlineMat", scene);
+  outlineMat.diffuseColor = new BABYLON.Color3(1, 1, 0);
+  outlineMat.emissiveColor = new BABYLON.Color3(1, 1, 0);
+  outlineMat.backFaceCulling = false;
+
+  // Cercle plein
+  const filledCircle = BABYLON.MeshBuilder.CreateDisc("filledCircle", {
+    radius: baseRadius,
+    tessellation: 64,
+    sideOrientation: BABYLON.Mesh.DOUBLESIDE
   }, scene);
-  sphere.scaling.x = -1;
+  filledCircle.material = filledMat;
+  filledCircle.position = circlePosition.clone();
 
-  const panoMat = new BABYLON.StandardMaterial("panoMat", scene);
-  panoMat.diffuseTexture = new BABYLON.Texture("test.png", scene);
-  panoMat.backFaceCulling = false;
-  panoMat.specularColor = new BABYLON.Color3(0, 0, 0);
-  panoMat.ambientColor = new BABYLON.Color3(1, 1, 1);
-  sphere.material = panoMat;
+  // Cercle contour
+  const outlineCircle = BABYLON.MeshBuilder.CreateDisc("outlineCircle", {
+    radius: baseRadius * 1.5,
+    tessellation: 64,
+    sideOrientation: BABYLON.Mesh.DOUBLESIDE
+  }, scene);
+  outlineCircle.material = outlineMat;
+  outlineCircle.position = circlePosition.clone();
 
-  // GLB + Overlay
-  let glbMeshes = [];
-  const overlayText = document.getElementById("overlayText");
+  // Animation
+  let time = 0;
+  engine.runRenderLoop(() => {
+    scene.render();
+    time += engine.getDeltaTime() / 1000;
 
-  BABYLON.SceneLoader.ImportMesh("", "./", "socleetoiletoque.glb", scene, function (meshes) {
-    glbMeshes = meshes;
-    glbMeshes.forEach(mesh => {
-      mesh.scaling = new BABYLON.Vector3(20, 20, 20);
-      mesh.position = new BABYLON.Vector3(0, 0, 498);
-    });
-    overlayText.style.display = "block"; // Affiche le texte après chargement
+    const scaleFactor = 1 + Math.sin(time * pulseSpeed) * (pulseScale - 1);
+    const alphaFactor = 0.5 + 0.5 * Math.sin(time * blinkSpeed);
+
+    filledCircle.scaling.setAll(scaleFactor);
+    outlineCircle.scaling.setAll(scaleFactor);
+
+    filledMat.alpha = alphaFactor;
+    outlineMat.alpha = alphaFactor;
   });
 
-  // Clic = vidéo
+  // Clic sur les cercles = ouvrir vidéo
   scene.onPointerObservable.add((pointerInfo) => {
     if (pointerInfo.pickInfo.hit) {
       const picked = pointerInfo.pickInfo.pickedMesh;
-      if (glbMeshes.includes(picked)) {
+      if (picked === filledCircle || picked === outlineCircle) {
         const container = document.getElementById("videoContainer");
         const frame = document.getElementById("youtubeFrame");
-        frame.src = "https://www.youtube.com/embed/Jgcb7hjdgaU?autoplay=1";
+        frame.src = "https://www.youtube.com/embed/lUU1G-6klpI?autoplay=1";
         container.style.display = "block";
       }
     }
   }, BABYLON.PointerEventTypes.POINTERPICK);
 
+  // Bouton fermeture
   document.getElementById("closeButton").addEventListener("click", () => {
     const container = document.getElementById("videoContainer");
     const frame = document.getElementById("youtubeFrame");
     frame.src = "";
     container.style.display = "none";
-  });
-
-  // Animation + overlay suivi & visibilité
-  engine.runRenderLoop(() => {
-    scene.render();
-
-    if (glbMeshes.length) {
-      const mesh = glbMeshes[0];
-      const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
-
-      const pos = BABYLON.Vector3.Project(
-        worldCenter,
-        BABYLON.Matrix.Identity(),
-        scene.getTransformMatrix(),
-        camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
-      );
-
-      // Test si visible
-      const dirToMesh = worldCenter.subtract(camera.position).normalize();
-      const cameraDir = camera.getTarget().subtract(camera.position).normalize();
-      const angle = BABYLON.Vector3.Dot(dirToMesh, cameraDir);
-
-      const isVisible = angle > 0.5 && pos.z > 0;
-
-      if (isVisible) {
-        overlayText.style.left = `${pos.x}px`;
-        overlayText.style.top = `${pos.y + 10}px`;
-        overlayText.style.display = "block";
-      } else {
-        overlayText.style.display = "none";
-      }
-    }
   });
 
   window.addEventListener("resize", () => {
