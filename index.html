@@ -54,12 +54,13 @@
     /* ==== Cercles animés ==== */
     #circleContainer {
       position: absolute;
-      top: 100px;   /* <-- change position Y */
-      left: 100px;  /* <-- change position X */
-      width: 100px;  /* Taille du conteneur */
-      height: 100px;
-      z-index: 20;  /* Toujours au-dessus */
+      width: 80px;  /* Taille du cercle */
+      height: 80px;
+      margin-left: -40px; /* Pour centrer sur la position X */
+      margin-top: -40px;  /* Pour centrer sur la position Y */
+      z-index: 6;
       pointer-events: none;
+      display: none; /* Caché par défaut */
     }
     .circle {
       position: absolute;
@@ -153,6 +154,7 @@
   // GLB + Overlay
   let glbMeshes = [];
   const overlayText = document.getElementById("overlayText");
+  const circleContainer = document.getElementById("circleContainer");
 
   BABYLON.SceneLoader.ImportMesh("", "./", "socleetoiletoque.glb", scene, function (meshes) {
     glbMeshes = meshes;
@@ -161,6 +163,7 @@
       mesh.position = new BABYLON.Vector3(0, 0, 498);
     });
     overlayText.style.display = "block"; // Affiche le texte après chargement
+    circleContainer.style.display = "block"; // Active aussi le cercle
   });
 
   // Clic = vidéo
@@ -209,8 +212,13 @@
         overlayText.style.left = `${pos.x}px`;
         overlayText.style.top = `${pos.y + 10}px`;
         overlayText.style.display = "block";
+
+        circleContainer.style.left = `${pos.x}px`;
+        circleContainer.style.top = `${pos.y}px`;
+        circleContainer.style.display = "block";
       } else {
         overlayText.style.display = "none";
+        circleContainer.style.display = "none";
       }
     }
   });
