@@ -1,13 +1,61 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>GLB visibles sans background</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-html, body { margin:0; overflow:hidden; height:100%; background:black; }
-#renderCanvas { width:100%; height:100%; display:block; }
-</style>
+  <meta charset="UTF-8" />
+  <title>GLB + cercles dynamiques</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    html, body {
+      margin: 0;
+      overflow: hidden;
+      height: 100%;
+      background: black;
+    }
+    #renderCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* ==== Style cercles animés ==== */
+    .circleContainer {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      z-index: 20;
+      display: none;
+      cursor: pointer;
+    }
+    .circle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: pulse 2s infinite;
+    }
+    .circle.fill {
+      background: rgba(255, 0, 0, 0.6);
+    }
+    .circle.stroke {
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      background: transparent;
+      animation-delay: 1s; /* décalage pour alterner */
+    }
+    @keyframes pulse {
+      0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: translate(-50%, -50%) scale(1.3);
+        opacity: 0.3;
+      }
+    }
+  </style>
 </head>
 <body>
 
@@ -15,41 +63,93 @@ html, body { margin:0; overflow:hidden; height:100%; background:black; }
 
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
 <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+
 <script>
-const canvas = document.getElementById("renderCanvas");
-const engine = new BABYLON.Engine(canvas,true);
-const scene = new BABYLON.Scene(engine);
+  const canvas = document.getElementById("renderCanvas");
+  const engine = new BABYLON.Engine(canvas, true);
+  const scene = new BABYLON.Scene(engine);
 
-// Caméra
-const camera = new BABYLON.ArcRotateCamera("cam", Math.PI/2, Math.PI/2.5, 300, new BABYLON.Vector3(0,0,0), scene);
-camera.attachControl(canvas,true);
+  const camera = new BABYLON.ArcRotateCamera("cam",
+    Math.PI / 2, Math.PI / 2.5, 300,
+    new BABYLON.Vector3(0, 0, 0), scene);
+  camera.attachControl(canvas, true);
 
-// Lumières
-new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0,1,0),scene);
-new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(0,0,-1),scene);
+  // Lumière
+  new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-// Liste GLB
-const glbFiles=["1.glb","2.glb","3.glb"];
+  // Map mesh ↔ cercle HTML
+  const circleMap = new Map();
 
-// Charger GLB
-glbFiles.forEach((file,index)=>{
-  BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes){
-    meshes.forEach(mesh=>{
-      // Ne prendre que les meshes visibles et non vides
-      if(mesh.isVisible && mesh.getTotalVertices() > 0){
-        mesh.scaling = new BABYLON.Vector3(20,20,20);
-        mesh.position = new BABYLON.Vector3(index*150, 0, 0); // position dans l'espace
+  // Fonction utilitaire pour créer un double cercle HTML
+  function createCircle(id) {
+    const container = document.createElement("div");
+    container.id = "circle_" + id;
+    container.classList.add("circleContainer");
+    container.innerHTML = `
+      <div class="circle fill"></div>
+      <div class="circle stroke"></div>
+    `;
+    document.body.appendChild(container);
+    return container;
+  }
+
+  // Liste des GLB à charger
+  const glbFiles = [
+    "1.glb",
+    "2.glb",
+    "3.glb"
+  ];
+
+  // Charger chaque GLB et associer un cercle
+  glbFiles.forEach((file, index) => {
+    BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
+      const mesh = meshes[0];
+      mesh.scaling = new BABYLON.Vector3(20, 20, 20);
+      mesh.position = new BABYLON.Vector3(
+        index * 150, // juste pour les espacer
+        0,
+        500
+      );
+
+      const circle = createCircle(index + 1);
+      circleMap.set(mesh, circle);
+
+      // Exemple d’action : clic sur le cercle
+      circle.addEventListener("click", () => {
+        alert("Clic sur cercle " + (index + 1));
+      });
+    });
+  });
+
+  // Boucle d’animation
+  engine.runRenderLoop(() => {
+    scene.render();
+
+    circleMap.forEach((circle, mesh) => {
+      if (!mesh) return;
+
+      const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
+
+      const pos = BABYLON.Vector3.Project(
+        worldCenter,
+        BABYLON.Matrix.Identity(),
+        scene.getTransformMatrix(),
+        camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
+      );
+
+      if (pos.z > 0) {
+        circle.style.left = `${pos.x}px`;
+        circle.style.top = `${pos.y}px`;
+        circle.style.display = "block";
+      } else {
+        circle.style.display = "none";
       }
     });
   });
-});
 
-// Boucle de rendu
-engine.runRenderLoop(()=>{
-  scene.render();
-});
-
-window.addEventListener("resize",()=>{engine.resize();});
+  window.addEventListener("resize", () => {
+    engine.resize();
+  });
 </script>
 
 </body>
