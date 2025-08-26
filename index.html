@@ -2,39 +2,21 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>GLB + cercles simples</title>
+  <title>GLB + cercles simples (GUI)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <style>
-    html, body {
-      margin: 0;
-      overflow: hidden;
-      height: 100%;
-      background: black;
-    }
-    #renderCanvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    /* Cercle simple statique */
-    .circle {
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      background: red;
-      border-radius: 50%;
-      pointer-events: none;
-    }
+    html, body { margin:0; overflow:hidden; height:100%; background:black; }
+    #renderCanvas { width:100%; height:100%; display:block; }
   </style>
 </head>
 <body>
 
 <canvas id="renderCanvas"></canvas>
 
+<!-- BabylonJS core + loaders + GUI -->
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
 <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+<script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
 
 <script>
 const canvas = document.getElementById("renderCanvas");
@@ -50,60 +32,50 @@ camera.attachControl(canvas, true);
 // Lumière
 new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-// Stocker les cercles et meshes
-const circles = [];
-const meshesList = [];
+// UI Babylon GUI (pour les cercles)
+const ui = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+
+// Helper : créer un cercle GUI et le lier à un mesh
+function addCircleForMesh(mesh) {
+  const circle = new BABYLON.GUI.Ellipse();
+  circle.width = "18px";
+  circle.height = "18px";
+  circle.thickness = 2;          // bord blanc fin
+  circle.color = "white";
+  circle.background = "red";     // remplissage rouge
+  circle.alpha = 0.95;           // légèrement translucide
+  ui.addControl(circle);
+  circle.linkWithMesh(mesh);     // le cercle suit le mesh
+  // circle.linkOffsetY = 0;     // tu peux décaler si besoin
+  return circle;
+}
 
 // Liste des GLB à charger
 const glbFiles = ["1.glb","2.glb","3.glb"];
 
-// Charger chaque GLB et créer un cercle statique
+// Charger chaque GLB, positionner, puis ajouter un cercle GUI sur le mesh principal
 glbFiles.forEach((file, index) => {
   BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
-    const mainMeshes = meshes.filter(m => m.isVisible && m.getTotalVertices() > 0);
-    if(mainMeshes.length === 0) return;
+    // Prendre un mesh "réel" (avec des vertices). Si aucun, on prend meshes[0].
+    const main = meshes.find(m => m.getTotalVertices && m.getTotalVertices() > 0) || meshes[0];
+    if (!main) return;
 
-    mainMeshes.forEach(mesh=>{
-      mesh.scaling = new BABYLON.Vector3(20,20,20);
-      mesh.position = new BABYLON.Vector3(index*150,0,500);
+    // Appliquer la même transfo à tous les meshes "visibles" du GLB
+    meshes.forEach(m => {
+      if (m.getTotalVertices && m.getTotalVertices() > 0) {
+        m.scaling = new BABYLON.Vector3(20, 20, 20);
+        m.position = new BABYLON.Vector3(index * 150, 0, 500);
+      }
     });
 
-    // Créer un cercle pour le premier mesh
-    const circle = document.createElement("div");
-    circle.classList.add("circle");
-    document.body.appendChild(circle);
-
-    circles.push(circle);
-    meshesList.push(mainMeshes[0]);
+    // Ajouter un seul cercle par GLB, lié au mesh principal
+    addCircleForMesh(main);
   });
 });
 
-// Boucle d’animation : positionner les cercles au-dessus des GLB
-engine.runRenderLoop(()=>{
-  scene.render();
-
-  meshesList.forEach((mesh, i)=>{
-    if(!mesh) return;
-    const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
-
-    const pos = BABYLON.Vector3.Project(
-      worldCenter,
-      BABYLON.Matrix.Identity(),
-      scene.getTransformMatrix(),
-      camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
-    );
-
-    if(pos.z > 0){
-      circles[i].style.left = `${pos.x - 10}px`; // centrer le cercle
-      circles[i].style.top = `${pos.y - 10}px`;
-      circles[i].style.display = "block";
-    } else {
-      circles[i].style.display = "none";
-    }
-  });
-});
-
-window.addEventListener("resize", ()=>{engine.resize();});
+// Rendu
+engine.runRenderLoop(() => scene.render());
+window.addEventListener("resize", () => engine.resize());
 </script>
 
 </body>
