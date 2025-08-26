@@ -24,7 +24,7 @@
       width: 40px;
       height: 40px;
       z-index: 20;
-      display: none;
+      display: none; /* caché par défaut */
       cursor: pointer;
     }
     .circle {
@@ -96,7 +96,7 @@
   sphere.scaling.x = -1; // inverser pour vue intérieure
 
   const panoMat = new BABYLON.StandardMaterial("panoMat", scene);
-  panoMat.diffuseTexture = new BABYLON.Texture("test.png", scene); // <-- ton image 360°
+  panoMat.diffuseTexture = new BABYLON.Texture("test2.png", scene); // <-- ton image 360°
   panoMat.backFaceCulling = false;
   panoMat.specularColor = new BABYLON.Color3(0, 0, 0);
   panoMat.ambientColor = new BABYLON.Color3(1, 1, 1);
@@ -105,7 +105,7 @@
   // === Map mesh ↔ cercle HTML ===
   const circleMap = new Map();
 
-  // Créateur de cercles
+  // Créateur de cercles HTML (double cercle animé)
   function createCircle(id) {
     const container = document.createElement("div");
     container.id = "circle_" + id;
@@ -114,6 +114,7 @@
       <div class="circle fill"></div>
       <div class="circle stroke"></div>
     `;
+    container.style.display = "none"; // caché par défaut
     document.body.appendChild(container);
     return container;
   }
@@ -131,7 +132,7 @@
       const mesh = meshes[0];
       mesh.scaling = new BABYLON.Vector3(20, 20, 20);
       mesh.position = new BABYLON.Vector3(
-        index * 150, // juste pour les écarter
+        index * 150, // espacement pour tester
         0,
         500
       );
@@ -162,7 +163,8 @@
         camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
       );
 
-      if (pos.z > 0) {
+      // Affiche uniquement si la projection est valide (devant la caméra)
+      if (pos && pos.z > 0) {
         circle.style.left = `${pos.x}px`;
         circle.style.top = `${pos.y}px`;
         circle.style.display = "block";
