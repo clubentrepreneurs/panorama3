@@ -2,9 +2,8 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>GLB + Cercles dynamiques</title>
+  <title>GLB + Cercles dynamiques propres</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <style>
     html, body {
       margin: 0;
@@ -68,6 +67,9 @@ camera.attachControl(canvas,true);
 // Lumières
 new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0,1,0),scene);
 
+// Supprimer d'éventuels cercles fantômes résiduels
+document.querySelectorAll('.circleContainer').forEach(c => c.remove());
+
 // Map mesh ↔ cercle
 const circleMap = new Map();
 
@@ -100,7 +102,7 @@ glbFiles.forEach((file,index)=>{
     const circle = createCircle(index+1);
     circleMap.set(mainMeshes[0], circle);
 
-    // Exemple d’action sur clic
+    // Action sur clic
     circle.addEventListener("click",()=>{ alert("Clic sur cercle "+(index+1)); });
   });
 });
