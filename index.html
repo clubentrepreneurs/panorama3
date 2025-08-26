@@ -31,6 +31,9 @@ html, body { margin:0; overflow:hidden; height:100%; background:black; }
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
 <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 <script>
+// === Nettoyage des anciens cercles fantômes ===
+document.querySelectorAll('.circleContainer').forEach(c => c.remove());
+
 const canvas = document.getElementById("renderCanvas");
 const engine = new BABYLON.Engine(canvas,true);
 const scene = new BABYLON.Scene(engine);
@@ -47,7 +50,7 @@ new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(0,0,-1),scene);
 const sphere = BABYLON.MeshBuilder.CreateSphere("sphere",{segments:64,diameter:1000},scene);
 sphere.scaling.x=-1;
 const panoMat = new BABYLON.StandardMaterial("panoMat",scene);
-panoMat.diffuseTexture = new BABYLON.Texture("test2.png",scene);
+panoMat.diffuseTexture = new BABYLON.Texture("test.png",scene);
 panoMat.backFaceCulling=false;
 panoMat.specularColor=new BABYLON.Color3(0,0,0);
 panoMat.ambientColor=new BABYLON.Color3(1,1,1);
