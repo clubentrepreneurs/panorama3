@@ -47,7 +47,7 @@ new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(0,0,-1),scene);
 const sphere = BABYLON.MeshBuilder.CreateSphere("sphere",{segments:64,diameter:1000},scene);
 sphere.scaling.x=-1;
 const panoMat = new BABYLON.StandardMaterial("panoMat",scene);
-panoMat.diffuseTexture = new BABYLON.Texture("test2.png",scene);
+panoMat.diffuseTexture = new BABYLON.Texture("test.png",scene);
 panoMat.backFaceCulling=false;
 panoMat.specularColor=new BABYLON.Color3(0,0,0);
 panoMat.ambientColor=new BABYLON.Color3(1,1,1);
