@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>GLB + cercles dynamiques</title>
+  <title>Panorama + GLB + cercles dynamiques</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
@@ -43,7 +43,7 @@
     .circle.stroke {
       border: 2px solid rgba(255, 255, 255, 0.8);
       background: transparent;
-      animation-delay: 1s; /* décalage pour alterner */
+      animation-delay: 1s;
     }
     @keyframes pulse {
       0%, 100% {
@@ -69,18 +69,43 @@
   const engine = new BABYLON.Engine(canvas, true);
   const scene = new BABYLON.Scene(engine);
 
+  // === Caméra ===
   const camera = new BABYLON.ArcRotateCamera("cam",
     Math.PI / 2, Math.PI / 2.5, 300,
     new BABYLON.Vector3(0, 0, 0), scene);
+  camera.pinchDeltaPercentage = 0.003;
+  camera.wheelDeltaPercentage = 0.005;
+  camera.lowerRadiusLimit = 150;
+  camera.upperRadiusLimit = 400;
+  camera.panningSensibility = 2500;
+  camera.angularSensibilityX = 5000;
+  camera.angularSensibilityY = 5000;
   camera.attachControl(canvas, true);
 
-  // Lumière
-  new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+  // === Lumières ===
+  const hemiLight = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+  hemiLight.intensity = 1.0;
+  const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(0, 0, -1), scene);
+  dirLight.intensity = 0.8;
 
-  // Map mesh ↔ cercle HTML
+  // === Sphère panoramique (background 360°) ===
+  const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {
+    segments: 64,
+    diameter: 1000,
+  }, scene);
+  sphere.scaling.x = -1; // inverser pour vue intérieure
+
+  const panoMat = new BABYLON.StandardMaterial("panoMat", scene);
+  panoMat.diffuseTexture = new BABYLON.Texture("test2.png", scene); // <-- ton image 360°
+  panoMat.backFaceCulling = false;
+  panoMat.specularColor = new BABYLON.Color3(0, 0, 0);
+  panoMat.ambientColor = new BABYLON.Color3(1, 1, 1);
+  sphere.material = panoMat;
+
+  // === Map mesh ↔ cercle HTML ===
   const circleMap = new Map();
 
-  // Fonction utilitaire pour créer un double cercle HTML
+  // Créateur de cercles
   function createCircle(id) {
     const container = document.createElement("div");
     container.id = "circle_" + id;
@@ -93,20 +118,20 @@
     return container;
   }
 
-  // Liste des GLB à charger
+  // === Liste des GLB ===
   const glbFiles = [
     "1.glb",
     "2.glb",
     "3.glb"
   ];
 
-  // Charger chaque GLB et associer un cercle
+  // Charger GLB + cercle associé
   glbFiles.forEach((file, index) => {
     BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
       const mesh = meshes[0];
       mesh.scaling = new BABYLON.Vector3(20, 20, 20);
       mesh.position = new BABYLON.Vector3(
-        index * 150, // juste pour les espacer
+        index * 150, // juste pour les écarter
         0,
         500
       );
@@ -114,14 +139,14 @@
       const circle = createCircle(index + 1);
       circleMap.set(mesh, circle);
 
-      // Exemple d’action : clic sur le cercle
+      // Exemple d’action : clic sur cercle
       circle.addEventListener("click", () => {
         alert("Clic sur cercle " + (index + 1));
       });
     });
   });
 
-  // Boucle d’animation
+  // === Boucle d’animation ===
   engine.runRenderLoop(() => {
     scene.render();
 
