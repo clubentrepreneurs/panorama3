@@ -1,51 +1,13 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Panorama + GLB + cercles dynamiques</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    html, body { margin: 0; overflow: hidden; height: 100%; background: black; }
-    #renderCanvas { width: 100%; height: 100%; display: block; }
-
-    /* === Cercles pulsants === */
-    .circleContainer {
-      position: absolute;
-      width: 40px;
-      height: 40px;
-      z-index: 20;
-      display: none;
-      cursor: pointer;
-    }
-    .circle {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      animation: pulse 2s infinite;
-    }
-    .circle.fill {
-      background: rgba(255, 0, 0, 0.6);
-    }
-    .circle.stroke {
-      border: 2px solid rgba(255, 255, 255, 0.8);
-      background: transparent;
-      animation-delay: 1s;
-    }
-    @keyframes pulse {
-      0%, 100% {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
-      }
-      50% {
-        transform: translate(-50%, -50%) scale(1.3);
-        opacity: 0.3;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Panorama + GLB sans cercles</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+html, body { margin:0; overflow:hidden; height:100%; background:black; }
+#renderCanvas { width:100%; height:100%; display:block; }
+</style>
 </head>
 <body>
 
@@ -54,89 +16,49 @@
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
 <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 <script>
-  const canvas = document.getElementById("renderCanvas");
-  const engine = new BABYLON.Engine(canvas, true);
-  const scene = new BABYLON.Scene(engine);
+const canvas = document.getElementById("renderCanvas");
+const engine = new BABYLON.Engine(canvas,true);
+const scene = new BABYLON.Scene(engine);
 
-  // === Caméra ===
-  const camera = new BABYLON.ArcRotateCamera("cam", Math.PI / 2, Math.PI / 2.5, 300, new BABYLON.Vector3(0, 0, 0), scene);
-  camera.attachControl(canvas, true);
+// Caméra
+const camera = new BABYLON.ArcRotateCamera("cam", Math.PI/2, Math.PI/2.5, 300, new BABYLON.Vector3(0,0,0), scene);
+camera.attachControl(canvas,true);
 
-  // === Lumières ===
-  new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-  new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(0, 0, -1), scene);
+// Lumières
+new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0,1,0),scene);
+new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(0,0,-1),scene);
 
-  // === Sphère panoramique ===
-  const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", { segments: 64, diameter: 1000 }, scene);
-  sphere.scaling.x = -1;
-  const panoMat = new BABYLON.StandardMaterial("panoMat", scene);
-  panoMat.diffuseTexture = new BABYLON.Texture("test.png", scene);
-  panoMat.backFaceCulling = false;
-  panoMat.specularColor = new BABYLON.Color3(0, 0, 0);
-  panoMat.ambientColor = new BABYLON.Color3(1, 1, 1);
-  sphere.material = panoMat;
+// Sphère panoramique
+const sphere = BABYLON.MeshBuilder.CreateSphere("sphere",{segments:64,diameter:1000},scene);
+sphere.scaling.x=-1;
+const panoMat = new BABYLON.StandardMaterial("panoMat",scene);
+panoMat.diffuseTexture = new BABYLON.Texture("test2.png",scene);
+panoMat.backFaceCulling=false;
+panoMat.specularColor=new BABYLON.Color3(0,0,0);
+panoMat.ambientColor=new BABYLON.Color3(1,1,1);
+sphere.material=panoMat;
 
-  // === Map mesh ↔ cercle HTML ===
-  const circleMap = new Map();
+// Liste GLB
+const glbFiles=["1.glb","2.glb","3.glb"];
 
-  // === Liste des fichiers GLB ===
-  const glbFiles = ["1.glb", "2.glb", "3.glb"];
+// Charger GLB
+glbFiles.forEach((file,index)=>{
+  BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes){
+    // Prendre uniquement le mesh principal visible
+    const mesh = meshes.find(m => m.isVisible && m.getTotalVertices() > 0);
+    if(!mesh) return;
 
-  // === Chargement des GLB et création des cercles associés ===
-  glbFiles.forEach((file, index) => {
-    BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function (meshes) {
-      if (meshes.length === 0) return;
-
-      const mesh = meshes[0];
-      mesh.scaling = new BABYLON.Vector3(20, 20, 20);
-      mesh.position = new BABYLON.Vector3(index * 150, 0, 500);
-
-      // Création du cercle HTML lié au mesh
-      const container = document.createElement("div");
-      container.id = "circle_" + index;
-      container.classList.add("circleContainer");
-      container.innerHTML = `
-        <div class="circle fill"></div>
-        <div class="circle stroke"></div>
-      `;
-      container.style.display = "none";
-      document.body.appendChild(container);
-
-      circleMap.set(mesh, container);
-
-      container.addEventListener("click", () => {
-        alert("Clic sur cercle " + (index + 1));
-      });
-    });
+    mesh.scaling = new BABYLON.Vector3(20,20,20);
+    mesh.position = new BABYLON.Vector3(index*150,0,500);
   });
+});
 
-  // === Boucle d’animation ===
-  engine.runRenderLoop(() => {
-    scene.render();
-    circleMap.forEach((circle, mesh) => {
-      if (!mesh || !circle) return;
+// Boucle de rendu
+engine.runRenderLoop(()=>{
+  scene.render();
+});
 
-      const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
-      const pos = BABYLON.Vector3.Project(
-        worldCenter,
-        BABYLON.Matrix.Identity(),
-        scene.getTransformMatrix(),
-        camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
-      );
-
-      if (pos && pos.z > 0) {
-        circle.style.left = `${pos.x}px`;
-        circle.style.top = `${pos.y}px`;
-        circle.style.display = "block";
-      } else {
-        circle.style.display = "none";
-      }
-    });
-  });
-
-  window.addEventListener("resize", () => {
-    engine.resize();
-  });
+window.addEventListener("resize",()=>{engine.resize();});
 </script>
 
 </body>
