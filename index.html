@@ -31,6 +31,11 @@ html, body { margin:0; overflow:hidden; height:100%; background:black; }
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
 <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 <script>
+
+// Supprime tous les anciens conteneurs de cercle avant de créer les nouveaux
+document.querySelectorAll('#circleContainer, .circleContainer').forEach(c => c.remove());
+
+  
 const canvas = document.getElementById("renderCanvas");
 const engine = new BABYLON.Engine(canvas,true);
 const scene = new BABYLON.Scene(engine);
