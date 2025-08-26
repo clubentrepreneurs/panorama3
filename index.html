@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>GLB + cercles simples (GUI)</title>
+  <title>GLB + cercles + panorama</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body { margin:0; overflow:hidden; height:100%; background:black; }
@@ -32,6 +32,15 @@ camera.attachControl(canvas, true);
 // Lumière
 new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
+// === PANORAMA EN BACKGROUND ===
+const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {segments:64, diameter:900}, scene);
+sphere.scaling.x = -1; // inverser pour voir la texture depuis l'intérieur
+const panoMat = new BABYLON.StandardMaterial("panoMat", scene);
+panoMat.diffuseTexture = new BABYLON.Texture("test2.png", scene); // <-- ton PNG
+panoMat.backFaceCulling = false;
+panoMat.specularColor = new BABYLON.Color3(0,0,0);
+sphere.material = panoMat;
+
 // UI Babylon GUI (pour les cercles)
 const ui = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
@@ -40,13 +49,12 @@ function addCircleForMesh(mesh) {
   const circle = new BABYLON.GUI.Ellipse();
   circle.width = "18px";
   circle.height = "18px";
-  circle.thickness = 2;          // bord blanc fin
+  circle.thickness = 2;
   circle.color = "white";
-  circle.background = "red";     // remplissage rouge
-  circle.alpha = 0.95;           // légèrement translucide
+  circle.background = "red";
+  circle.alpha = 0.95;
   ui.addControl(circle);
-  circle.linkWithMesh(mesh);     // le cercle suit le mesh
-  // circle.linkOffsetY = 0;     // tu peux décaler si besoin
+  circle.linkWithMesh(mesh);
   return circle;
 }
 
@@ -56,11 +64,9 @@ const glbFiles = ["1.glb","2.glb","3.glb"];
 // Charger chaque GLB, positionner, puis ajouter un cercle GUI sur le mesh principal
 glbFiles.forEach((file, index) => {
   BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
-    // Prendre un mesh "réel" (avec des vertices). Si aucun, on prend meshes[0].
     const main = meshes.find(m => m.getTotalVertices && m.getTotalVertices() > 0) || meshes[0];
     if (!main) return;
 
-    // Appliquer la même transfo à tous les meshes "visibles" du GLB
     meshes.forEach(m => {
       if (m.getTotalVertices && m.getTotalVertices() > 0) {
         m.scaling = new BABYLON.Vector3(20, 20, 20);
@@ -68,7 +74,6 @@ glbFiles.forEach((file, index) => {
       }
     });
 
-    // Ajouter un seul cercle par GLB, lié au mesh principal
     addCircleForMesh(main);
   });
 });
