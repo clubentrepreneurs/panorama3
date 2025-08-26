@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Panorama + GLB visibles</title>
+<title>GLB visibles sans background</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 html, body { margin:0; overflow:hidden; height:100%; background:black; }
@@ -28,16 +28,6 @@ camera.attachControl(canvas,true);
 new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0,1,0),scene);
 new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(0,0,-1),scene);
 
-// Sphère panoramique
-const sphere = BABYLON.MeshBuilder.CreateSphere("sphere",{segments:64,diameter:900},scene);
-sphere.scaling.x=-1;
-const panoMat = new BABYLON.StandardMaterial("panoMat",scene);
-panoMat.diffuseTexture = new BABYLON.Texture("test2.png",scene);
-panoMat.backFaceCulling=false;
-panoMat.specularColor=new BABYLON.Color3(0,0,0);
-panoMat.ambientColor=new BABYLON.Color3(1,1,1);
-sphere.material=panoMat;
-
 // Liste GLB
 const glbFiles=["1.glb","2.glb","3.glb"];
 
@@ -48,7 +38,7 @@ glbFiles.forEach((file,index)=>{
       // Ne prendre que les meshes visibles et non vides
       if(mesh.isVisible && mesh.getTotalVertices() > 0){
         mesh.scaling = new BABYLON.Vector3(20,20,20);
-        mesh.position = new BABYLON.Vector3(index*150, 0, 450);
+        mesh.position = new BABYLON.Vector3(index*150, 0, 0); // position dans l'espace
       }
     });
   });
