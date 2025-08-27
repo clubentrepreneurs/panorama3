@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>GLB + cercle unique par cube</title>
+  <title>GLB + cercles + panorama</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
@@ -50,13 +50,27 @@
   const engine = new BABYLON.Engine(canvas, true);
   const scene = new BABYLON.Scene(engine);
 
+  // Caméra
   const camera = new BABYLON.ArcRotateCamera("cam",
     Math.PI / 2, Math.PI / 2.5, 300,
     new BABYLON.Vector3(0, 0, 0), scene);
   camera.attachControl(canvas, true);
 
+  // Lumière
   new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
+  // === Ajout du fond panoramique ===
+  const dome = new BABYLON.PhotoDome(
+    "panorama",
+    "test.png",            // ton image équirectangulaire
+    {
+      resolution: 32,
+      size: 1000
+    },
+    scene
+  );
+
+  // Map mesh ↔ cercle HTML
   const circleMap = new Map();
 
   function createCircle(id) {
@@ -72,11 +86,9 @@
 
   glbFiles.forEach((file, index) => {
     BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
-      // On filtre pour ne garder que les meshes géométriques
       const realMeshes = meshes.filter(m => m.getTotalVertices() > 0);
       if (realMeshes.length === 0) return;
 
-      // Pour chaque fichier on prend uniquement le premier mesh géométrique
       const mesh = realMeshes[0];
       mesh.scaling = new BABYLON.Vector3(20, 20, 20);
       mesh.position = new BABYLON.Vector3(index * 150, 0, 500);
@@ -92,24 +104,22 @@
     circleMap.forEach((circle, mesh) => {
       if (!mesh) return;
 
-   const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
+      const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
 
-const pos = BABYLON.Vector3.Project(
-  worldCenter,
-  BABYLON.Matrix.IdentityReadOnly, // ou mesh.getWorldMatrix()
-  scene.getTransformMatrix(),      // déjà viewProjectionMatrix
-  camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
-);
+      const pos = BABYLON.Vector3.Project(
+        worldCenter,
+        BABYLON.Matrix.IdentityReadOnly,
+        scene.getTransformMatrix(),
+        camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
+      );
 
-
-
-     if (pos.z >= 0 && pos.z <= 1) {   // z dans le frustum caméra
-  circle.style.left = `${pos.x}px`;
-  circle.style.top = `${pos.y}px`;
-  circle.style.display = "block";
-} else {
-  circle.style.display = "none";
-}
+      if (pos.z >= 0 && pos.z <= 1) {
+        circle.style.left = `${pos.x}px`;
+        circle.style.top = `${pos.y}px`;
+        circle.style.display = "block";
+      } else {
+        circle.style.display = "none";
+      }
     });
   });
 
