@@ -21,11 +21,10 @@
             width: 40px;
             height: 40px;
             z-index: 20;
-            display: none;
-            pointer-events: auto;
             display: flex;
             justify-content: center;
             align-items: center;
+            pointer-events: auto;
         }
         .circle {
             position: absolute;
@@ -65,7 +64,7 @@
             }
         }
         
-        /* Styles mis à jour pour la vidéo en pop-up */
+        /* Styles vidéo en pop-up */
         #video-container {
             position: fixed;
             top: 0;
@@ -77,15 +76,21 @@
             justify-content: center;
             align-items: center;
             z-index: 100;
+            overflow: hidden;
         }
         #video-player {
-            width: 50vw;
-            height: 50vh;
-            /* Le lecteur vidéo s'adapte à la taille de l'écran, surtout sur mobile */
+            width: 80vw;
+            height: 45vw; /* ratio 16:9 */
             max-width: 90vw; 
-            max-height: 90vh;
+            max-height: 80vh;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             border: none;
+        }
+        @media (max-width: 768px) {
+            #video-player {
+                width: 95vw;
+                height: 53vw; /* garde un bon ratio sur mobile */
+            }
         }
         #close-button {
             position: absolute;
@@ -119,10 +124,10 @@
         // Lumière
         new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-        // === Ajout du fond panoramique ===
+        // === Fond panoramique ===
         const dome = new BABYLON.PhotoDome(
             "panorama",
-            "test2.png",
+            "test3.png",
             { resolution: 32, size: 1000 },
             scene
         );
@@ -190,7 +195,6 @@
                     const embedUrl = getEmbedUrl(videoUrls[index]);
                     videoPlayer.src = embedUrl;
                     videoContainer.style.display = "flex";
-                    // Nouvelle logique : on désactive la caméra quand la vidéo est affichée
                     camera.detachControl(canvas);
                 });
             });
@@ -199,7 +203,6 @@
         closeButton.addEventListener('click', () => {
             videoPlayer.src = "";
             videoContainer.style.display = "none";
-            // Nouvelle logique : on réactive la caméra quand la vidéo est fermée
             camera.attachControl(canvas, true);
         });
 
@@ -218,6 +221,7 @@
                 if (pos.z >= 0 && pos.z <= 1) {
                     circle.style.left = `${pos.x}px`;
                     circle.style.top = `${pos.y}px`;
+                    circle.style.transform = "translate(-50%, -50%)"; // <-- centrage correct
                     circle.style.visibility = "visible";
                 } else {
                     circle.style.visibility = "hidden";
