@@ -22,7 +22,11 @@
             height: 40px;
             z-index: 20;
             display: none;
-            pointer-events: auto; /* Permet de cliquer sur le cercle */
+            pointer-events: auto;
+            /* Permet de positionner l'animation */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .circle {
             position: absolute;
@@ -33,7 +37,42 @@
             border-radius: 50%;
             transform: translate(-50%, -50%);
             border: 2px solid red;
+            /* Animation de clignotement */
+            animation: pulse 2s infinite ease-in-out;
         }
+        /* Effet de double cercle animé */
+        .circle::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 0, 0, 0.7);
+            transform: scale(0);
+            /* Animation du second cercle */
+            animation: growFade 2s infinite ease-out;
+            animation-delay: 0.5s; /* Petit décalage pour un effet visuel */
+        }
+        
+        /* Keyframes pour l'effet de clignotement */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* Keyframes pour l'effet de croissance et d'estompement */
+        @keyframes growFade {
+            0% {
+                transform: scale(0);
+                opacity: 0.7;
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+        
         /* Styles pour la vidéo en pop-up */
         #video-container {
             position: fixed;
@@ -42,14 +81,14 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.8);
-            display: none; /* Initialement caché */
+            display: none;
             justify-content: center;
             align-items: center;
             z-index: 100;
         }
         #video-player {
-            width: 50vw; /* Moitié de la largeur de l'écran */
-            height: 50vh; /* Moitié de la hauteur de l'écran */
+            width: 50vw;
+            height: 50vh;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             border: none;
         }
@@ -88,7 +127,7 @@
         // === Ajout du fond panoramique ===
         const dome = new BABYLON.PhotoDome(
             "panorama",
-            "test.png", 
+            "test.png",
             { resolution: 32, size: 1000 },
             scene
         );
@@ -105,7 +144,7 @@
             return container;
         }
 
-        const glbFiles = ["1.glb", "2.glb", "3.glb", "4.glb"]; 
+        const glbFiles = ["1.glb", "2.glb", "3.glb", "4.glb"];
         
         const glbPositions = [
             new BABYLON.Vector3(-250, 0, 400),
@@ -114,7 +153,6 @@
             new BABYLON.Vector3(600, 0, 400)
         ];
         
-        // Tableau des URLs de vidéos, dans le même ordre que les fichiers GLB
         const videoUrls = [
             "https://www.youtube.com/watch?v=lUU1G-6klpI",
             "https://www.youtube.com/watch?v=SWIDVGO3Gg0",
@@ -122,12 +160,10 @@
             "https://www.youtube.com/watch?v=T6CI_hIbJIA"
         ];
         
-        // Récupération des éléments vidéo
         const videoContainer = document.getElementById("video-container");
         const videoPlayer = document.getElementById("video-player");
         const closeButton = document.getElementById("close-button");
         
-        // Fonction pour convertir une URL YouTube classique en URL d'intégration
         function getEmbedUrl(url) {
             const videoId = url.split('v=')[1];
             return `https://www.youtube.com/embed/${videoId}`;
@@ -148,27 +184,23 @@
                 const circle = createCircle(index + 1);
                 circleMap.set(mesh, circle);
 
-                // Ajout de l'événement clic sur chaque cercle
                 circle.addEventListener('click', () => {
                     const embedUrl = getEmbedUrl(videoUrls[index]);
                     videoPlayer.src = embedUrl;
-                    videoContainer.style.display = "flex"; // Affiche le conteneur vidéo
+                    videoContainer.style.display = "flex";
                 });
             });
         });
 
-        // Gère la fermeture de la vidéo
         closeButton.addEventListener('click', () => {
-            videoPlayer.src = ""; // Arrête la lecture de la vidéo en vidant la source
-            videoContainer.style.display = "none"; // Cache le conteneur
+            videoPlayer.src = "";
+            videoContainer.style.display = "none";
         });
 
-        // Gère le rendu de la scène et la position des cercles
         engine.runRenderLoop(() => {
             scene.render();
             circleMap.forEach((circle, mesh) => {
                 if (!mesh) return;
-
                 const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
                 const pos = BABYLON.Vector3.Project(
                     worldCenter,
@@ -177,12 +209,13 @@
                     camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
                 );
 
+                // Gérer l'affichage/masquage du conteneur en fonction de la position
                 if (pos.z >= 0 && pos.z <= 1) {
                     circle.style.left = `${pos.x}px`;
                     circle.style.top = `${pos.y}px`;
-                    circle.style.display = "block";
+                    circle.style.visibility = "visible"; // Utiliser visible/hidden pour ne pas perturber l'animation
                 } else {
-                    circle.style.display = "none";
+                    circle.style.visibility = "hidden";
                 }
             });
         });
