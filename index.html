@@ -1,96 +1,131 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>GLB Auto-distribution fonctionnel</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-html, body { margin:0; overflow:hidden; height:100%; background:black; }
-#renderCanvas { width:100%; height:100%; display:block; }
-.circleContainer { position:absolute; width:40px; height:40px; z-index:20; display:none; pointer-events:none; }
-.circle { position:absolute; top:50%; left:50%; width:100%; height:100%; border-radius:50%; transform:translate(-50%, -50%); border:2px solid red; }
-</style>
+    <meta charset="UTF-8" />
+    <title>GLB + cercles + panorama</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        html, body {
+            margin: 0;
+            overflow: hidden;
+            height: 100%;
+            background: black;
+        }
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .circleContainer {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            z-index: 20;
+            display: none;
+            pointer-events: none;
+        }
+        .circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid red;
+        }
+    </style>
 </head>
 <body>
-<canvas id="renderCanvas"></canvas>
-<script src="https://cdn.babylonjs.com/babylon.js"></script>
-<script>
-const canvas = document.getElementById("renderCanvas");
-const engine = new BABYLON.Engine(canvas, true);
-const scene = new BABYLON.Scene(engine);
+    <canvas id="renderCanvas"></canvas>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <script>
+        const canvas = document.getElementById("renderCanvas");
+        const engine = new BABYLON.Engine(canvas, true);
+        const scene = new BABYLON.Scene(engine);
 
-// Caméra
-const camera = new BABYLON.ArcRotateCamera("cam",
-  Math.PI/2, Math.PI/2.5, 400, new BABYLON.Vector3(0,0,0), scene);
-camera.attachControl(canvas, true);
+        // Caméra
+        const camera = new BABYLON.ArcRotateCamera("cam", Math.PI / 2, Math.PI / 2.5, 300, new BABYLON.Vector3(0, 0, 0), scene);
+        camera.attachControl(canvas, true);
 
-// Lumières
-new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0,1,0), scene);
-new BABYLON.PointLight("point", new BABYLON.Vector3(0,50,0), scene);
+        // Lumière
+        new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-// PhotoDome avec panorama en ligne (fonctionnel)
-const dome = new BABYLON.PhotoDome(
-  "panorama",
-  "https://playground.babylonjs.com/textures/panorama.jpg",
-  { resolution:32, size:600 },
-  scene
-);
-dome.photoDomeMaterial.backFaceCulling = false;
+        // === Ajout du fond panoramique ===
+        const dome = new BABYLON.PhotoDome(
+            "panorama",
+            "test.png", // votre image équirectangulaire
+            { resolution: 32, size: 1000 },
+            scene
+        );
 
-// Map mesh ↔ cercle HTML
-const circleMap = new Map();
-function createCircle(id) {
-  const c = document.createElement("div");
-  c.id = "circle_"+id;
-  c.classList.add("circleContainer");
-  c.innerHTML = `<div class="circle"></div>`;
-  document.body.appendChild(c);
-  return c;
-}
+        // Map mesh ↔ cercle HTML
+        const circleMap = new Map();
 
-// Liste des objets à placer (ici cubes pour test)
-const objects = [0,1,2]; // remplace par GLB plus tard
-const radius = 250;
+        function createCircle(id) {
+            const container = document.createElement("div");
+            container.id = "circle_" + id;
+            container.classList.add("circleContainer");
+            container.innerHTML = `<div class="circle"></div>`;
+            document.body.appendChild(container);
+            return container;
+        }
 
-objects.forEach((o, index) => {
-  const box = BABYLON.MeshBuilder.CreateBox("box"+index, {size:40}, scene);
+        const glbFiles = ["1.glb", "2.glb", "3.glb"];
+        
+        // Tableau des positions (x, y, z) pour chaque modèle GLB
+        // Vous pouvez ajuster ces valeurs à votre guise
+        const glbPositions = [
+            new BABYLON.Vector3(-250, 0, 400), // Position du premier modèle
+            new BABYLON.Vector3(0, 0, 400),    // Position du deuxième modèle
+            new BABYLON.Vector3(350, 0, 400)   // Position du troisième modèle
+        ];
 
-  // Auto-distribution sur l'équateur
-  const angle = (index / objects.length) * Math.PI * 2;
-  box.position = new BABYLON.Vector3(
-    radius * Math.cos(angle),
-    0,
-    radius * Math.sin(angle)
-  );
+        glbFiles.forEach((file, index) => {
+            BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
+                const realMeshes = meshes.filter(m => m.getTotalVertices() > 0);
+                if (realMeshes.length === 0) return;
 
-  const circle = createCircle(index+1);
-  circleMap.set(box, circle);
-});
+                const mesh = realMeshes[0];
+                mesh.scaling = new BABYLON.Vector3(20, 20, 20);
+                
+                // On assigne la position en utilisant le tableau
+                if (glbPositions[index]) {
+                    mesh.position = glbPositions[index];
+                }
 
-// Boucle de rendu et mise à jour cercles
-engine.runRenderLoop(() => {
-  scene.render();
+                const circle = createCircle(index + 1);
+                circleMap.set(mesh, circle);
+            });
+        });
 
-  circleMap.forEach((circle, mesh) => {
-    if(!mesh) return;
-    const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
-    const pos = BABYLON.Vector3.Project(
-      worldCenter,
-      BABYLON.Matrix.IdentityReadOnly,
-      scene.getTransformMatrix(),
-      camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
-    );
-    if(pos.z >= 0 && pos.z <= 1){
-      circle.style.left = `${pos.x}px`;
-      circle.style.top = `${pos.y}px`;
-      circle.style.display = "block";
-    } else {
-      circle.style.display = "none";
-    }
-  });
-});
+        engine.runRenderLoop(() => {
+            scene.render();
+            circleMap.forEach((circle, mesh) => {
+                if (!mesh) return;
 
-window.addEventListener("resize", () => engine.resize());
-</script>
+                const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
+                const pos = BABYLON.Vector3.Project(
+                    worldCenter,
+                    BABYLON.Matrix.IdentityReadOnly,
+                    scene.getTransformMatrix(),
+                    camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
+                );
+
+                if (pos.z >= 0 && pos.z <= 1) {
+                    circle.style.left = `${pos.x}px`;
+                    circle.style.top = `${pos.y}px`;
+                    circle.style.display = "block";
+                } else {
+                    circle.style.display = "none";
+                }
+            });
+        });
+
+        window.addEventListener("resize", () => {
+            engine.resize();
+        });
+    </script>
 </body>
 </html>
