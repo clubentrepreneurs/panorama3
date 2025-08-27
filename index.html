@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>GLB sans cercles</title>
+  <title>GLB + cercle unique</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
@@ -16,6 +16,26 @@
       width: 100%;
       height: 100%;
       display: block;
+    }
+
+    /* ==== Style cercle ==== */
+    .circleContainer {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      z-index: 20;
+      display: none;
+      pointer-events: none;
+    }
+    .circle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      border: 2px solid red;
     }
   </style>
 </head>
@@ -39,29 +59,61 @@
   // Lumière
   new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-  // Liste des GLB à charger
-  const glbFiles = [
-    "1.glb",
-    "2.glb",
-    "3.glb"
-  ];
+  // Map mesh ↔ cercle HTML
+  const circleMap = new Map();
 
-  // Charger chaque GLB
+  // Fonction utilitaire pour créer un cercle HTML
+  function createCircle(id) {
+    const container = document.createElement("div");
+    container.id = "circle_" + id;
+    container.classList.add("circleContainer");
+    container.innerHTML = `<div class="circle"></div>`;
+    document.body.appendChild(container);
+    return container;
+  }
+
+  // Liste des GLB à charger
+  const glbFiles = ["1.glb", "2.glb", "3.glb"];
+
+  // Charger chaque GLB et associer un cercle
   glbFiles.forEach((file, index) => {
     BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
-      const mesh = meshes.find(m => m.getTotalVertices() > 0) || meshes[0];
+      // Trouver le vrai mesh (ton cube)
+      const mesh = meshes.find(m => m.getTotalVertices() > 0);
+      if (!mesh) return;
+
       mesh.scaling = new BABYLON.Vector3(20, 20, 20);
-      mesh.position = new BABYLON.Vector3(
-        index * 150,
-        0,
-        500
-      );
+      mesh.position = new BABYLON.Vector3(index * 150, 0, 500);
+
+      const circle = createCircle(index + 1);
+      circleMap.set(mesh, circle);
     });
   });
 
   // Boucle d’animation
   engine.runRenderLoop(() => {
     scene.render();
+
+    circleMap.forEach((circle, mesh) => {
+      if (!mesh) return;
+
+      const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
+
+      const pos = BABYLON.Vector3.Project(
+        worldCenter,
+        BABYLON.Matrix.Identity(),
+        scene.getTransformMatrix(),
+        camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
+      );
+
+      if (pos.z > 0) {
+        circle.style.left = `${pos.x}px`;
+        circle.style.top = `${pos.y}px`;
+        circle.style.display = "block";
+      } else {
+        circle.style.display = "none";
+      }
+    });
   });
 
   window.addEventListener("resize", () => {
