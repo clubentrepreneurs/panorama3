@@ -103,13 +103,13 @@ const pos = BABYLON.Vector3.Project(
 
 
 
-      if (pos.z > 0) {
-        circle.style.left = `${pos.x}px`;
-        circle.style.top = `${pos.y}px`;
-        circle.style.display = "block";
-      } else {
-        circle.style.display = "none";
-      }
+     if (pos.z >= 0 && pos.z <= 1) {   // z dans le frustum caméra
+  circle.style.left = `${pos.x}px`;
+  circle.style.top = `${pos.y}px`;
+  circle.style.display = "block";
+} else {
+  circle.style.display = "none";
+}
     });
   });
 
