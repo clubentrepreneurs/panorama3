@@ -65,16 +65,13 @@
             }
         }
         
-        /* Styles mis à jour pour la vidéo en pop-up */
         #video-container {
             position: fixed;
             top: 50%;
             left: 50%;
             width: 50vw;
             height: 50vh;
-            /* Centre le conteneur en se basant sur sa propre taille */
             transform: translate(-50%, -50%);
-            
             background-color: rgba(0, 0, 0, 0.8);
             display: none;
             z-index: 100;
@@ -138,7 +135,7 @@
         }
 
         const glbFiles = ["1.glb", "2.glb", "3.glb", "4.glb"];
-
+        
         const videoUrls = [
             "https://www.youtube.com/watch?v=lUU1G-6klpI",
             "https://www.youtube.com/watch?v=SWIDVGO3Gg0",
@@ -146,11 +143,12 @@
             "https://www.youtube.com/watch?v=T6CI_hIbJIA"
         ];
         
+        // CORRECTION : Les valeurs sont maintenant converties en radians
         const customAngles = [
-            0.5,
-            302,
-            112.5,
-            214
+            0.5 * (Math.PI / 180),   // ~0.0087 rad
+            302 * (Math.PI / 180),   // ~5.27 rad
+            112.5 * (Math.PI / 180), // ~1.96 rad
+            214 * (Math.PI / 180)    // ~3.73 rad
         ];
         
         const radius = 400;
@@ -187,7 +185,7 @@
                 circle.addEventListener('click', () => {
                     const embedUrl = getEmbedUrl(videoUrls[index]);
                     videoPlayer.src = embedUrl;
-                    videoContainer.style.display = "block"; // Utilise "block" au lieu de "flex"
+                    videoContainer.style.display = "block";
                 });
             });
         });
