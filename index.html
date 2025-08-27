@@ -1,231 +1,85 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8" />
-    <title>GLB + cercles + panorama</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        html, body {
-            margin: 0;
-            overflow: hidden;
-            height: 100%;
-            background: black;
-        }
-        #renderCanvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-        .circleContainer {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            z-index: 20;
-            display: none;
-            pointer-events: auto;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .circle {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            border: 2px solid red;
-            animation: pulse 2s infinite ease-in-out;
-        }
-        .circle::after {
-            content: "";
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 0, 0, 0.7);
-            transform: scale(0);
-            animation: growFade 2s infinite ease-out;
-            animation-delay: 0.5s;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        @keyframes growFade {
-            0% {
-                transform: scale(0);
-                opacity: 0.7;
-            }
-            100% {
-                transform: scale(1.5);
-                opacity: 0;
-            }
-        }
-        #video-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-        }
-        #video-player {
-            width: 50vw;
-            height: 50vh;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            border: none;
-        }
-        #close-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 101;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Scène 360° Three.js</title>
+  <style>
+    body { margin:0; overflow:hidden; }
+    canvas { display:block; }
+  </style>
 </head>
 <body>
-    <canvas id="renderCanvas"></canvas>
-    <div id="video-container">
-        <span id="close-button">&times;</span>
-        <iframe id="video-player" frameborder="0" allowfullscreen allow="autoplay"></iframe>
-    </div>
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js";
 
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
-    <script>
-        const canvas = document.getElementById("renderCanvas");
-        const engine = new BABYLON.Engine(canvas, true);
-        const scene = new BABYLON.Scene(engine);
+let scene, camera, renderer, controls;
+let models = [];
+let radius = 5;
 
-        // Caméra
-        const camera = new BABYLON.ArcRotateCamera("cam", Math.PI / 2, Math.PI / 2.5, 300, new BABYLON.Vector3(0, 0, 0), scene);
-        camera.attachControl(canvas, true);
+init();
+addModel("1.glb");
+addModel("2.glb");
+addModel("3.glb");
+addModel("4.glb");
 
-        // Lumière
-        new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+animate();
 
-        // === Ajout du fond panoramique ===
-        const dome = new BABYLON.PhotoDome(
-            "panorama",
-            "test.png",
-            { resolution: 32, size: 1000 },
-            scene
-        );
+function init() {
+  scene = new THREE.Scene();
 
-        // Map mesh ↔ cercle HTML
-        const circleMap = new Map();
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 100);
+  camera.position.set(0, 2, 10);
 
-        function createCircle(id) {
-            const container = document.createElement("div");
-            container.id = "circle_" + id;
-            container.classList.add("circleContainer");
-            container.innerHTML = `<div class="circle"></div>`;
-            document.body.appendChild(container);
-            return container;
-        }
+  renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
 
-        const glbFiles = ["1.glb", "2.glb", "3.glb", "4.glb"];
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
 
-        const videoUrls = [
-            "https://www.youtube.com/watch?v=lUU1G-6klpI",
-            "https://www.youtube.com/watch?v=SWIDVGO3Gg0",
-            "https://www.youtube.com/watch?v=Jgcb7hjdgaU",
-            "https://www.youtube.com/watch?v=T6CI_hIbJIA"
-        ];
-        
-        // --- LES ANGLES POUR CHANGER LES ESPACEMENTS ---
-        const customAngles = [
-            0.5,
-            2,
-            2.5,
-            4
-        ];
-        
-        const radius = 400; // La distance des modèles par rapport au centre
+  const light = new THREE.HemisphereLight(0xffffff, 0x444444, 2);
+  scene.add(light);
 
-        const videoContainer = document.getElementById("video-container");
-        const videoPlayer = document.getElementById("video-player");
-        const closeButton = document.getElementById("close-button");
+  window.addEventListener("resize", onWindowResize);
+}
 
-        function getEmbedUrl(url) {
-            const videoId = url.split('v=')[1];
-            return `https://www.youtube.com/embed/${videoId}`;
-        }
+function addModel(path) {
+  const loader = new GLTFLoader();
+  loader.load(path, (gltf) => {
+    let model = gltf.scene;
+    model.scale.set(1,1,1);
+    scene.add(model);
+    models.push(model);
+    updatePositions();
+  });
+}
 
-        glbFiles.forEach((file, index) => {
-            BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
-                const realMeshes = meshes.filter(m => m.getTotalVertices() > 0);
-                if (realMeshes.length === 0) return;
+function updatePositions() {
+  let n = models.length;
+  models.forEach((model, i) => {
+    let angle = (i / n) * Math.PI * 2;
+    model.position.set(
+      radius * Math.cos(angle),
+      0,
+      radius * Math.sin(angle)
+    );
+    model.lookAt(0,0,0); // orienter vers le centre
+  });
+}
 
-                const mesh = realMeshes[0];
-                mesh.scaling = new BABYLON.Vector3(20, 20, 20);
-                
-                // 1. Créer un nœud de transformation (pivot) au centre de la scène (0,0,0 par défaut)
-                const pivot = new BABYLON.TransformNode("pivot_" + index, scene);
-                
-                // 2. Définir la position du mesh par rapport au pivot (parent)
-                // C'est cette ligne qui était mal placée.
-                mesh.position.z = radius;
-                
-                // 3. Appliquer la rotation au pivot
-                if (customAngles[index] !== undefined) {
-                    pivot.rotation.y = customAngles[index];
-                }
-                
-                // 4. Attacher le mesh au pivot
-                mesh.parent = pivot;
+function onWindowResize() {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
 
-                const circle = createCircle(index + 1);
-                circleMap.set(mesh, circle);
-
-                circle.addEventListener('click', () => {
-                    const embedUrl = getEmbedUrl(videoUrls[index]);
-                    videoPlayer.src = embedUrl;
-                    videoContainer.style.display = "flex";
-                });
-            });
-        });
-
-        closeButton.addEventListener('click', () => {
-            videoPlayer.src = "";
-            videoContainer.style.display = "none";
-        });
-
-        engine.runRenderLoop(() => {
-            scene.render();
-            circleMap.forEach((circle, mesh) => {
-                if (!mesh) return;
-                const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
-                const pos = BABYLON.Vector3.Project(
-                    worldCenter,
-                    BABYLON.Matrix.IdentityReadOnly,
-                    scene.getTransformMatrix(),
-                    camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
-                );
-
-                if (pos.z >= 0 && pos.z <= 1) {
-                    circle.style.left = `${pos.x}px`;
-                    circle.style.top = `${pos.y}px`;
-                    circle.style.visibility = "visible";
-                } else {
-                    circle.style.visibility = "hidden";
-                }
-            });
-        });
-
-        window.addEventListener("resize", () => {
-            engine.resize();
-        });
-    </script>
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+</script>
 </body>
 </html>
