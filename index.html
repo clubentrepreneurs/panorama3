@@ -1,140 +1,132 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<title>GLB Auto-distribution sur équateur</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <title>GLB + cercles + panorama</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<style>
-html, body {
-  margin: 0;
-  overflow: hidden;
-  height: 100%;
-  background: black;
-}
-#renderCanvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-.circleContainer {
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  z-index: 20;
-  display: none;
-  pointer-events: none;
-}
-.circle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  border: 2px solid red;
-}
-</style>
+  <style>
+    html, body {
+      margin: 0;
+      overflow: hidden;
+      height: 100%;
+      background: black;
+    }
+    #renderCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .circleContainer {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      z-index: 20;
+      display: none;
+      pointer-events: none;
+    }
+    .circle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      border: 2px solid red;
+    }
+  </style>
 </head>
 <body>
+
 <canvas id="renderCanvas"></canvas>
 
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
 <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 
 <script>
-const canvas = document.getElementById("renderCanvas");
-const engine = new BABYLON.Engine(canvas, true);
-const scene = new BABYLON.Scene(engine);
+  const canvas = document.getElementById("renderCanvas");
+  const engine = new BABYLON.Engine(canvas, true);
+  const scene = new BABYLON.Scene(engine);
 
-// Caméra
-const camera = new BABYLON.ArcRotateCamera("cam",
-    Math.PI / 2, Math.PI / 2.5, 400,
+  // Caméra
+  const camera = new BABYLON.ArcRotateCamera("cam",
+    Math.PI / 2, Math.PI / 2.5, 300,
     new BABYLON.Vector3(0, 0, 0), scene);
-camera.attachControl(canvas, true);
+  camera.attachControl(canvas, true);
 
-// Lumières
-new BABYLON.HemisphericLight("hemiLight", new BABYLON.Vector3(0,1,0), scene);
-new BABYLON.PointLight("pointLight", new BABYLON.Vector3(0,50,0), scene);
+  // Lumière
+  new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-// PhotoDome avec panorama en ligne
-const domeSize = 600;
-const dome = new BABYLON.PhotoDome(
+  // === Ajout du fond panoramique ===
+  const dome = new BABYLON.PhotoDome(
     "panorama",
-    "https://playground.babylonjs.com/textures/panorama.jpg",
-    { resolution: 32, size: domeSize },
+    "test.png",            // ton image équirectangulaire
+    {
+      resolution: 32,
+      size: 1000
+    },
     scene
-);
-dome.photoDomeMaterial.backFaceCulling = false;
+  );
 
-// Cube central temporaire pour vérifier la scène
-const box = BABYLON.MeshBuilder.CreateBox("box", {size:50}, scene);
-box.position = new BABYLON.Vector3(0,0,0);
+  // Map mesh ↔ cercle HTML
+  const circleMap = new Map();
 
-// Map mesh ↔ cercle HTML
-const circleMap = new Map();
-function createCircle(id) {
+  function createCircle(id) {
     const container = document.createElement("div");
     container.id = "circle_" + id;
     container.classList.add("circleContainer");
     container.innerHTML = `<div class="circle"></div>`;
     document.body.appendChild(container);
     return container;
-}
+  }
 
-// Liste des fichiers GLB disponibles
-const glbFiles = ["1.glb","2.glb","3.glb"]; // tu peux en mettre plus
-const glbRadius = 250;
+  const glbFiles = ["1.glb", "2.glb", "3.glb"];
 
-// Auto-distribution sur l'équateur
-glbFiles.forEach((file, index) => {
+  glbFiles.forEach((file, index) => {
     BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
-        const realMeshes = meshes.filter(m => m.getTotalVertices() > 0);
-        if(realMeshes.length === 0) return;
+      const realMeshes = meshes.filter(m => m.getTotalVertices() > 0);
+      if (realMeshes.length === 0) return;
 
-        const mesh = realMeshes[0];
-        mesh.scaling = new BABYLON.Vector3(20,20,20);
+      const mesh = realMeshes[0];
+      mesh.scaling = new BABYLON.Vector3(20, 20, 20);
+      mesh.position = new BABYLON.Vector3(index * 150, 0, 500);
 
-        // Angle automatique sur le cercle
-        const angle = (index / glbFiles.length) * Math.PI * 2;
-        mesh.position = new BABYLON.Vector3(
-            glbRadius * Math.cos(angle),
-            0,
-            glbRadius * Math.sin(angle)
-        );
-
-        const circle = createCircle(index + 1);
-        circleMap.set(mesh, circle);
+      const circle = createCircle(index + 1);
+      circleMap.set(mesh, circle);
     });
-});
+  });
 
-// Boucle de rendu et mise à jour des cercles
-engine.runRenderLoop(() => {
+  engine.runRenderLoop(() => {
     scene.render();
 
     circleMap.forEach((circle, mesh) => {
-        if(!mesh) return;
+      if (!mesh) return;
 
-        const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
-        const pos = BABYLON.Vector3.Project(
-            worldCenter,
-            BABYLON.Matrix.IdentityReadOnly,
-            scene.getTransformMatrix(),
-            camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
-        );
+      const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
 
-        if(pos.z >= 0 && pos.z <= 1){
-            circle.style.left = `${pos.x}px`;
-            circle.style.top = `${pos.y}px`;
-            circle.style.display = "block";
-        } else {
-            circle.style.display = "none";
-        }
+      const pos = BABYLON.Vector3.Project(
+        worldCenter,
+        BABYLON.Matrix.IdentityReadOnly,
+        scene.getTransformMatrix(),
+        camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
+      );
+
+      if (pos.z >= 0 && pos.z <= 1) {
+        circle.style.left = `${pos.x}px`;
+        circle.style.top = `${pos.y}px`;
+        circle.style.display = "block";
+      } else {
+        circle.style.display = "none";
+      }
     });
-});
+  });
 
-window.addEventListener("resize", () => engine.resize());
+  window.addEventListener("resize", () => {
+    engine.resize();
+  });
 </script>
+
 </body>
 </html>
