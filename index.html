@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>GLB + cercle unique par fichier</title>
+  <title>GLB + cercle unique par cube</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
@@ -72,29 +72,27 @@
 
   glbFiles.forEach((file, index) => {
     BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
-      if (!meshes.length) return;
+      // On filtre pour ne garder que les meshes géométriques
+      const realMeshes = meshes.filter(m => m.getTotalVertices() > 0);
+      if (realMeshes.length === 0) return;
 
-      // Crée un "groupe" parent pour ce fichier
-      const parent = new BABYLON.TransformNode("root_" + index, scene);
-      meshes.forEach(m => m.parent = parent);
+      // Pour chaque fichier on prend uniquement le premier mesh géométrique
+      const mesh = realMeshes[0];
+      mesh.scaling = new BABYLON.Vector3(20, 20, 20);
+      mesh.position = new BABYLON.Vector3(index * 150, 0, 500);
 
-      // On applique le scaling/position au parent (pas aux enfants)
-      parent.scaling = new BABYLON.Vector3(20, 20, 20);
-      parent.position = new BABYLON.Vector3(index * 150, 0, 500);
-
-      // Créer un seul cercle pour ce groupe
       const circle = createCircle(index + 1);
-      circleMap.set(parent, circle);
+      circleMap.set(mesh, circle);
     });
   });
 
   engine.runRenderLoop(() => {
     scene.render();
 
-    circleMap.forEach((circle, parent) => {
-      if (!parent) return;
+    circleMap.forEach((circle, mesh) => {
+      if (!mesh) return;
 
-      const worldCenter = parent.getBoundingInfo().boundingSphere.centerWorld;
+      const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
 
       const pos = BABYLON.Vector3.Project(
         worldCenter,
