@@ -78,20 +78,13 @@
             z-index: 100;
             overflow: hidden;
         }
-       #video-player {
-    width: 50%;
-    height: 50%;
-    max-width: 50%;
-    max-height: 50%;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    border: none;
-}
-
-        @media (max-width: 768px) {
-            #video-player {
-                width: 95vw;
-                height: 53vw; /* garde un bon ratio sur mobile */
-            }
+        #video-player {
+            width: 50vw;
+            height: 50vh;
+            max-width: 50vw;
+            max-height: 50vh;
+            border: none;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
         #close-button {
             position: absolute;
@@ -167,9 +160,10 @@
         const videoPlayer = document.getElementById("video-player");
         const closeButton = document.getElementById("close-button");
 
+        // ✅ Ajout de playsinline pour empêcher le plein écran forcé sur mobile
         function getEmbedUrl(url) {
             const videoId = url.split('v=')[1];
-            return `https://www.youtube.com/embed/${videoId}`;
+            return `https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0&playsinline=1`;
         }
 
         glbFiles.forEach((file, index) => {
@@ -222,7 +216,7 @@
                 if (pos.z >= 0 && pos.z <= 1) {
                     circle.style.left = `${pos.x}px`;
                     circle.style.top = `${pos.y}px`;
-                    circle.style.transform = "translate(-50%, -50%)"; // <-- centrage correct
+                    circle.style.transform = "translate(-50%, -50%)"; // centrage
                     circle.style.visibility = "visible";
                 } else {
                     circle.style.visibility = "hidden";
