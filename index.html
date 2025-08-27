@@ -1,42 +1,41 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>GLB + Panorama équatorial fonctionnel</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8" />
+<title>GLB Auto-distribution sur équateur</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <style>
-    html, body {
-      margin: 0;
-      overflow: hidden;
-      height: 100%;
-      background: black;
-    }
-    #renderCanvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    .circleContainer {
-      position: absolute;
-      width: 40px;
-      height: 40px;
-      z-index: 20;
-      display: none;
-      pointer-events: none;
-    }
-    .circle {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      border: 2px solid red;
-    }
-  </style>
+<style>
+html, body {
+  margin: 0;
+  overflow: hidden;
+  height: 100%;
+  background: black;
+}
+#renderCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.circleContainer {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  z-index: 20;
+  display: none;
+  pointer-events: none;
+}
+.circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid red;
+}
+</style>
 </head>
 <body>
 <canvas id="renderCanvas"></canvas>
@@ -51,7 +50,7 @@ const scene = new BABYLON.Scene(engine);
 
 // Caméra
 const camera = new BABYLON.ArcRotateCamera("cam",
-    Math.PI / 2, Math.PI / 2.5, 300,
+    Math.PI / 2, Math.PI / 2.5, 400,
     new BABYLON.Vector3(0, 0, 0), scene);
 camera.attachControl(canvas, true);
 
@@ -59,7 +58,7 @@ camera.attachControl(canvas, true);
 new BABYLON.HemisphericLight("hemiLight", new BABYLON.Vector3(0,1,0), scene);
 new BABYLON.PointLight("pointLight", new BABYLON.Vector3(0,50,0), scene);
 
-// === Panorama équirectangulaire de test en ligne ===
+// PhotoDome avec panorama en ligne
 const domeSize = 600;
 const dome = new BABYLON.PhotoDome(
     "panorama",
@@ -68,6 +67,10 @@ const dome = new BABYLON.PhotoDome(
     scene
 );
 dome.photoDomeMaterial.backFaceCulling = false;
+
+// Cube central temporaire pour vérifier la scène
+const box = BABYLON.MeshBuilder.CreateBox("box", {size:50}, scene);
+box.position = new BABYLON.Vector3(0,0,0);
 
 // Map mesh ↔ cercle HTML
 const circleMap = new Map();
@@ -80,20 +83,21 @@ function createCircle(id) {
     return container;
 }
 
-// GLB files (doivent être dans le même dossier que ce HTML)
-const glbFiles = ["1.glb", "2.glb", "3.glb"];
-const glbRadius = 250; // rayon autour de l'équateur
+// Liste des fichiers GLB disponibles
+const glbFiles = ["1.glb","2.glb","3.glb"]; // tu peux en mettre plus
+const glbRadius = 250;
 
+// Auto-distribution sur l'équateur
 glbFiles.forEach((file, index) => {
     BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
         const realMeshes = meshes.filter(m => m.getTotalVertices() > 0);
-        if (realMeshes.length === 0) return;
+        if(realMeshes.length === 0) return;
 
         const mesh = realMeshes[0];
-        mesh.scaling = new BABYLON.Vector3(20, 20, 20);
+        mesh.scaling = new BABYLON.Vector3(20,20,20);
 
-        // Position sur l'équateur
-        const angle = (index / glbFiles.length) * Math.PI * 2; // répartis sur 360°
+        // Angle automatique sur le cercle
+        const angle = (index / glbFiles.length) * Math.PI * 2;
         mesh.position = new BABYLON.Vector3(
             glbRadius * Math.cos(angle),
             0,
@@ -105,12 +109,12 @@ glbFiles.forEach((file, index) => {
     });
 });
 
-// Boucle de rendu
+// Boucle de rendu et mise à jour des cercles
 engine.runRenderLoop(() => {
     scene.render();
 
     circleMap.forEach((circle, mesh) => {
-        if (!mesh) return;
+        if(!mesh) return;
 
         const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
         const pos = BABYLON.Vector3.Project(
@@ -120,7 +124,7 @@ engine.runRenderLoop(() => {
             camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
         );
 
-        if (pos.z >= 0 && pos.z <= 1) {
+        if(pos.z >= 0 && pos.z <= 1){
             circle.style.left = `${pos.x}px`;
             circle.style.top = `${pos.y}px`;
             circle.style.display = "block";
