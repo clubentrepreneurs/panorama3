@@ -23,7 +23,6 @@
             z-index: 20;
             display: none;
             pointer-events: auto;
-            /* Permet de positionner l'animation */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -37,10 +36,8 @@
             border-radius: 50%;
             transform: translate(-50%, -50%);
             border: 2px solid red;
-            /* Animation de clignotement */
             animation: pulse 2s infinite ease-in-out;
         }
-        /* Effet de double cercle animé */
         .circle::after {
             content: "";
             position: absolute;
@@ -49,19 +46,14 @@
             border-radius: 50%;
             border: 2px solid rgba(255, 0, 0, 0.7);
             transform: scale(0);
-            /* Animation du second cercle */
             animation: growFade 2s infinite ease-out;
-            animation-delay: 0.5s; /* Petit décalage pour un effet visuel */
+            animation-delay: 0.5s;
         }
-        
-        /* Keyframes pour l'effet de clignotement */
         @keyframes pulse {
             0% { opacity: 1; }
-            50% { opacity: 0.8; }
+            50% { opacity: 0.5; }
             100% { opacity: 1; }
         }
-        
-        /* Keyframes pour l'effet de croissance et d'estompement */
         @keyframes growFade {
             0% {
                 transform: scale(0);
@@ -72,8 +64,6 @@
                 opacity: 0;
             }
         }
-        
-        /* Styles pour la vidéo en pop-up */
         #video-container {
             position: fixed;
             top: 0;
@@ -127,7 +117,7 @@
         // === Ajout du fond panoramique ===
         const dome = new BABYLON.PhotoDome(
             "panorama",
-            "test2.png",
+            "test.png",
             { resolution: 32, size: 1000 },
             scene
         );
@@ -146,11 +136,15 @@
 
         const glbFiles = ["1.glb", "2.glb", "3.glb", "4.glb"];
         
+        // Nouvelles positions (x, y, z) pour une rotation de 90°
+        // Les valeurs X et Z des positions initiales ont été interverties
+        // et le signe a été ajusté pour la rotation.
+        // Positions initiales : (-250, 0, 400), (0, 0, 400), (350, 0, 400), (600, 0, 400)
         const glbPositions = [
-            new BABYLON.Vector3(-250, 0, 400),
-            new BABYLON.Vector3(0, 0, 400),
-            new BABYLON.Vector3(350, 0, 400),
-            new BABYLON.Vector3(600, 0, 400)
+            new BABYLON.Vector3(400, 0, 250),   // -250, 0, 400  =>  400, 0, 250
+            new BABYLON.Vector3(400, 0, 0),     // 0, 0, 400    =>  400, 0, 0
+            new BABYLON.Vector3(400, 0, -350),  // 350, 0, 400  =>  400, 0, -350
+            new BABYLON.Vector3(400, 0, -600)   // 600, 0, 400  =>  400, 0, -600
         ];
         
         const videoUrls = [
@@ -209,11 +203,10 @@
                     camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
                 );
 
-                // Gérer l'affichage/masquage du conteneur en fonction de la position
                 if (pos.z >= 0 && pos.z <= 1) {
                     circle.style.left = `${pos.x}px`;
                     circle.style.top = `${pos.y}px`;
-                    circle.style.visibility = "visible"; // Utiliser visible/hidden pour ne pas perturber l'animation
+                    circle.style.visibility = "visible";
                 } else {
                     circle.style.visibility = "hidden";
                 }
