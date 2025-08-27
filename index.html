@@ -72,14 +72,15 @@
             return container;
         }
 
-        const glbFiles = ["1.glb", "2.glb", "3.glb"];
+        // 1. Ajoutez le nom du nouveau fichier GLB ici
+        const glbFiles = ["1.glb", "2.glb", "3.glb", "4.glb"]; 
         
-        // Tableau des positions (x, y, z) pour chaque modèle GLB
-        // Vous pouvez ajuster ces valeurs à votre guise
+        // 2. Ajoutez une nouvelle position (x, y, z) pour le 4ème modèle
         const glbPositions = [
-            new BABYLON.Vector3(-250, 0, 400), // Position du premier modèle
-            new BABYLON.Vector3(0, 0, 400),    // Position du deuxième modèle
-            new BABYLON.Vector3(350, 0, 300)   // Position du troisième modèle
+            new BABYLON.Vector3(-250, 0, 400),
+            new BABYLON.Vector3(0, 0, 400),
+            new BABYLON.Vector3(350, 0, 300),
+            new BABYLON.Vector3(600, 0, 400) // Nouvelle position pour le 4ème modèle
         ];
 
         glbFiles.forEach((file, index) => {
@@ -90,7 +91,6 @@
                 const mesh = realMeshes[0];
                 mesh.scaling = new BABYLON.Vector3(20, 20, 20);
                 
-                // On assigne la position en utilisant le tableau
                 if (glbPositions[index]) {
                     mesh.position = glbPositions[index];
                 }
