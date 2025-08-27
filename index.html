@@ -100,26 +100,30 @@
     "3.glb"
   ];
 
-  // Charger chaque GLB et associer un cercle
-  glbFiles.forEach((file, index) => {
-    BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
-      const mesh = meshes[0];
-      mesh.scaling = new BABYLON.Vector3(20, 20, 20);
-      mesh.position = new BABYLON.Vector3(
-        index * 150, // juste pour les espacer
-        0,
-        500
-      );
+// Charger chaque GLB et associer un cercle
+glbFiles.forEach((file, index) => {
+  BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
+    // Cherche un vrai mesh avec géométrie (pas le transformNode vide)
+    const mesh = meshes.find(m => m.getTotalVertices() > 0);
+    if (!mesh) return;
 
-      const circle = createCircle(index + 1);
-      circleMap.set(mesh, circle);
+    mesh.scaling = new BABYLON.Vector3(20, 20, 20);
+    mesh.position = new BABYLON.Vector3(
+      index * 150, // juste pour les espacer
+      0,
+      500
+    );
 
-      // Exemple d’action : clic sur le cercle
-      circle.addEventListener("click", () => {
-        alert("Clic sur cercle " + (index + 1));
-      });
+    const circle = createCircle(index + 1);
+    circleMap.set(mesh, circle);
+
+    // Exemple d’action : clic sur le cercle
+    circle.addEventListener("click", () => {
+      alert("Clic sur cercle " + (index + 1));
     });
   });
+});
+
 
   // Boucle d’animation
   engine.runRenderLoop(() => {
