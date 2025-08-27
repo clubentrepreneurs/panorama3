@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>GLB + cercle unique</title>
+  <title>GLB + cercle unique par fichier</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
@@ -18,7 +18,6 @@
       display: block;
     }
 
-    /* ==== Style cercle ==== */
     .circleContainer {
       position: absolute;
       width: 40px;
@@ -56,13 +55,10 @@
     new BABYLON.Vector3(0, 0, 0), scene);
   camera.attachControl(canvas, true);
 
-  // Lumière
   new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-  // Map mesh ↔ cercle HTML
   const circleMap = new Map();
 
-  // Fonction utilitaire pour créer un cercle HTML
   function createCircle(id) {
     const container = document.createElement("div");
     container.id = "circle_" + id;
@@ -72,32 +68,33 @@
     return container;
   }
 
-  // Liste des GLB à charger
   const glbFiles = ["1.glb", "2.glb", "3.glb"];
 
-  // Charger chaque GLB et associer un cercle
   glbFiles.forEach((file, index) => {
     BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
-      // Trouver le vrai mesh (ton cube)
-      const mesh = meshes.find(m => m.getTotalVertices() > 0);
-      if (!mesh) return;
+      if (!meshes.length) return;
 
-      mesh.scaling = new BABYLON.Vector3(20, 20, 20);
-      mesh.position = new BABYLON.Vector3(index * 150, 0, 500);
+      // Crée un "groupe" parent pour ce fichier
+      const parent = new BABYLON.TransformNode("root_" + index, scene);
+      meshes.forEach(m => m.parent = parent);
 
+      // On applique le scaling/position au parent (pas aux enfants)
+      parent.scaling = new BABYLON.Vector3(20, 20, 20);
+      parent.position = new BABYLON.Vector3(index * 150, 0, 500);
+
+      // Créer un seul cercle pour ce groupe
       const circle = createCircle(index + 1);
-      circleMap.set(mesh, circle);
+      circleMap.set(parent, circle);
     });
   });
 
-  // Boucle d’animation
   engine.runRenderLoop(() => {
     scene.render();
 
-    circleMap.forEach((circle, mesh) => {
-      if (!mesh) return;
+    circleMap.forEach((circle, parent) => {
+      if (!parent) return;
 
-      const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
+      const worldCenter = parent.getBoundingInfo().boundingSphere.centerWorld;
 
       const pos = BABYLON.Vector3.Project(
         worldCenter,
