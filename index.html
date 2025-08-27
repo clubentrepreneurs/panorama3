@@ -143,24 +143,15 @@
             "https://www.youtube.com/watch?v=T6CI_hIbJIA"
         ];
         
-        // --- C'EST ICI QUE VOUS MODIFIEZ LES ESPACEMENTS ---
-        // Définissez un angle pour chaque GLB, en radians (360° = 2 * Math.PI)
+        // --- LES ANGLES POUR CHANGER LES ESPACEMENTS ---
         const customAngles = [
-            0.5,           // Angle du 1er GLB (environ 28.6°)
-            112,             // Angle du 2ème GLB (environ 114.6°)
-            82.5,           // Angle du 3ème GLB (environ 143.2°)
-            34              // Angle du 4ème GLB (environ 229.2°)
+            0.5,
+            2,
+            2.5,
+            4
         ];
-
-        // Vous pouvez aussi utiliser Math.PI pour plus de précision
-        // const customAngles = [
-        //    0,             // 0°
-        //    Math.PI / 2,   // 90°
-        //    Math.PI,       // 180°
-        //    (3 * Math.PI) / 2  // 270°
-        // ];
-
-        const radius = 400; // La distance des modèles par rapport au centre reste la même pour tous
+        
+        const radius = 400; // La distance des modèles par rapport au centre
 
         const videoContainer = document.getElementById("video-container");
         const videoPlayer = document.getElementById("video-player");
@@ -178,15 +169,20 @@
 
                 const mesh = realMeshes[0];
                 mesh.scaling = new BABYLON.Vector3(20, 20, 20);
-
-                const pivot = new BABYLON.TransformNode("pivot_" + index, scene);
-                pivot.position.z = radius;
                 
-                // On utilise l'angle du tableau personnalisé
+                // 1. Créer un nœud de transformation (pivot) au centre de la scène (0,0,0 par défaut)
+                const pivot = new BABYLON.TransformNode("pivot_" + index, scene);
+                
+                // 2. Définir la position du mesh par rapport au pivot (parent)
+                // C'est cette ligne qui était mal placée.
+                mesh.position.z = radius;
+                
+                // 3. Appliquer la rotation au pivot
                 if (customAngles[index] !== undefined) {
                     pivot.rotation.y = customAngles[index];
                 }
-
+                
+                // 4. Attacher le mesh au pivot
                 mesh.parent = pivot;
 
                 const circle = createCircle(index + 1);
