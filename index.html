@@ -100,16 +100,19 @@
     "3.glb"
   ];
 
+
 // Charger chaque GLB et associer un cercle
 glbFiles.forEach((file, index) => {
   BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
-    // Cherche un vrai mesh avec géométrie (pas le transformNode vide)
-    const mesh = meshes.find(m => m.getTotalVertices() > 0);
-    if (!mesh) return;
+    // On garde uniquement les meshes avec géométrie réelle
+    const realMeshes = meshes.filter(m => m.getTotalVertices() > 0);
+    if (realMeshes.length === 0) return;
 
+    // On prend le premier mesh géométrique (ou on peut boucler si besoin)
+    const mesh = realMeshes[0];
     mesh.scaling = new BABYLON.Vector3(20, 20, 20);
     mesh.position = new BABYLON.Vector3(
-      index * 150, // juste pour les espacer
+      index * 150,
       0,
       500
     );
@@ -123,6 +126,7 @@ glbFiles.forEach((file, index) => {
     });
   });
 });
+
 
 
   // Boucle d’animation
