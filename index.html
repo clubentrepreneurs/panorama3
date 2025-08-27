@@ -92,12 +92,15 @@
     circleMap.forEach((circle, mesh) => {
       if (!mesh) return;
 
-   const pos = BABYLON.Vector3.Project(
+   const worldCenter = mesh.getBoundingInfo().boundingSphere.centerWorld;
+
+const pos = BABYLON.Vector3.Project(
   worldCenter,
-  mesh.getWorldMatrix(),             // matrice monde du cube
-  scene.getTransformMatrix(),        // viewProjectionMatrix
+  BABYLON.Matrix.IdentityReadOnly, // ou mesh.getWorldMatrix()
+  scene.getTransformMatrix(),      // déjà viewProjectionMatrix
   camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())
 );
+
 
 
       if (pos.z > 0) {
