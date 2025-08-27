@@ -117,7 +117,7 @@
         // === Ajout du fond panoramique ===
         const dome = new BABYLON.PhotoDome(
             "panorama",
-            "test2.png",
+            "test.png",
             { resolution: 32, size: 1000 },
             scene
         );
@@ -136,15 +136,13 @@
 
         const glbFiles = ["1.glb", "2.glb", "3.glb", "4.glb"];
         
-        // Nouvelles positions (x, y, z) pour une rotation de 90°
-        // Les valeurs X et Z des positions initiales ont été interverties
-        // et le signe a été ajusté pour la rotation.
-        // Positions initiales : (-250, 0, 400), (0, 0, 400), (350, 0, 400), (600, 0, 400)
+        // Nouvelles positions (x, y, z) pour une rotation de 95°
+        // Note : cos(95°) ≈ -0.087 et sin(95°) ≈ 0.996
         const glbPositions = [
-            new BABYLON.Vector3(400, 0, 250),   // -250, 0, 400  =>  400, 0, 250
-            new BABYLON.Vector3(400, 0, 0),     // 0, 0, 400    =>  400, 0, 0
-            new BABYLON.Vector3(400, 0, -350),  // 350, 0, 400  =>  400, 0, -350
-            new BABYLON.Vector3(400, 0, -600)   // 600, 0, 400  =>  400, 0, -600
+            new BABYLON.Vector3(-41, 0, 417),
+            new BABYLON.Vector3(-40, 0, 398),
+            new BABYLON.Vector3(-31, 0, 532),
+            new BABYLON.Vector3(30, 0, 694)
         ];
         
         const videoUrls = [
