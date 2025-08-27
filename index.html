@@ -60,15 +60,13 @@
   new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
   // === Ajout du fond panoramique ===
-  const dome = new BABYLON.PhotoDome(
+const dome = new BABYLON.PhotoDome(
     "panorama",
-    "test.png",            // ton image équirectangulaire
-    {
-      resolution: 32,
-      size: 1000
-    },
+    "test.png",
+    { resolution: 32, size: 800 }, // plus petit que 1000
     scene
-  );
+);
+
 
   // Map mesh ↔ cercle HTML
   const circleMap = new Map();
