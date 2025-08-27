@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>GLB + Panorama équatorial</title>
+  <title>GLB + Panorama équatorial fonctionnel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
@@ -55,18 +55,19 @@ const camera = new BABYLON.ArcRotateCamera("cam",
     new BABYLON.Vector3(0, 0, 0), scene);
 camera.attachControl(canvas, true);
 
-// Lumière
-new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+// Lumières
+new BABYLON.HemisphericLight("hemiLight", new BABYLON.Vector3(0,1,0), scene);
+new BABYLON.PointLight("pointLight", new BABYLON.Vector3(0,50,0), scene);
 
-// === Panorama équirectangulaire ===
-const domeSize = 600; // Taille du dôme
+// === Panorama équirectangulaire de test en ligne ===
+const domeSize = 600;
 const dome = new BABYLON.PhotoDome(
     "panorama",
-    "test.png",
+    "https://playground.babylonjs.com/textures/panorama.jpg",
     { resolution: 32, size: domeSize },
     scene
 );
-dome.photoDomeMaterial.backFaceCulling = false; // sécurité pour ne pas cacher les meshes
+dome.photoDomeMaterial.backFaceCulling = false;
 
 // Map mesh ↔ cercle HTML
 const circleMap = new Map();
@@ -79,11 +80,9 @@ function createCircle(id) {
     return container;
 }
 
-// GLB files
+// GLB files (doivent être dans le même dossier que ce HTML)
 const glbFiles = ["1.glb", "2.glb", "3.glb"];
-
-// Rayon des GLB le long de l'équateur (doit être < domeSize/2)
-const glbRadius = 250;
+const glbRadius = 250; // rayon autour de l'équateur
 
 glbFiles.forEach((file, index) => {
     BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
@@ -93,12 +92,12 @@ glbFiles.forEach((file, index) => {
         const mesh = realMeshes[0];
         mesh.scaling = new BABYLON.Vector3(20, 20, 20);
 
-        // Position sur l'équateur (cercle horizontal autour de l'origine)
+        // Position sur l'équateur
         const angle = (index / glbFiles.length) * Math.PI * 2; // répartis sur 360°
         mesh.position = new BABYLON.Vector3(
-            glbRadius * Math.cos(angle),  // x
-            0,                            // y
-            glbRadius * Math.sin(angle)   // z
+            glbRadius * Math.cos(angle),
+            0,
+            glbRadius * Math.sin(angle)
         );
 
         const circle = createCircle(index + 1);
@@ -106,7 +105,7 @@ glbFiles.forEach((file, index) => {
     });
 });
 
-// === Boucle de rendu et positionnement des cercles ===
+// Boucle de rendu
 engine.runRenderLoop(() => {
     scene.render();
 
