@@ -22,7 +22,7 @@
             height: 40px;
             z-index: 20;
             display: none;
-            pointer-events: none;
+            pointer-events: auto; /* Permet de cliquer sur le cercle */
         }
         .circle {
             position: absolute;
@@ -34,10 +34,43 @@
             transform: translate(-50%, -50%);
             border: 2px solid red;
         }
+        /* Styles pour la vidéo en pop-up */
+        #video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none; /* Initialement caché */
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        #video-player {
+            width: 50vw; /* Moitié de la largeur de l'écran */
+            height: 50vh; /* Moitié de la hauteur de l'écran */
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border: none;
+        }
+        #close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 101;
+        }
     </style>
 </head>
 <body>
     <canvas id="renderCanvas"></canvas>
+    <div id="video-container">
+        <span id="close-button">&times;</span>
+        <iframe id="video-player" frameborder="0" allowfullscreen allow="autoplay"></iframe>
+    </div>
+
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
     <script>
@@ -55,7 +88,7 @@
         // === Ajout du fond panoramique ===
         const dome = new BABYLON.PhotoDome(
             "panorama",
-            "test.png", // votre image équirectangulaire
+            "test.png", 
             { resolution: 32, size: 1000 },
             scene
         );
@@ -72,16 +105,33 @@
             return container;
         }
 
-        // 1. Ajoutez le nom du nouveau fichier GLB ici
         const glbFiles = ["1.glb", "2.glb", "3.glb", "4.glb"]; 
         
-        // 2. Ajoutez une nouvelle position (x, y, z) pour le 4ème modèle
         const glbPositions = [
             new BABYLON.Vector3(-250, 0, 400),
             new BABYLON.Vector3(0, 0, 400),
-            new BABYLON.Vector3(350, 0, 300),
-            new BABYLON.Vector3(380, 0, 320) // Nouvelle position pour le 4ème modèle
+            new BABYLON.Vector3(350, 0, 400),
+            new BABYLON.Vector3(600, 0, 400)
         ];
+        
+        // Tableau des URLs de vidéos, dans le même ordre que les fichiers GLB
+        const videoUrls = [
+            "https://www.youtube.com/watch?v=lUU1G-6klpI",
+            "https://www.youtube.com/watch?v=SWIDVGO3Gg0",
+            "https://www.youtube.com/watch?v=Jgcb7hjdgaU",
+            "https://www.youtube.com/watch?v=T6CI_hIbJIA"
+        ];
+        
+        // Récupération des éléments vidéo
+        const videoContainer = document.getElementById("video-container");
+        const videoPlayer = document.getElementById("video-player");
+        const closeButton = document.getElementById("close-button");
+        
+        // Fonction pour convertir une URL YouTube classique en URL d'intégration
+        function getEmbedUrl(url) {
+            const videoId = url.split('v=')[1];
+            return `https://www.youtube.com/embed/${videoId}`;
+        }
 
         glbFiles.forEach((file, index) => {
             BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
@@ -97,9 +147,23 @@
 
                 const circle = createCircle(index + 1);
                 circleMap.set(mesh, circle);
+
+                // Ajout de l'événement clic sur chaque cercle
+                circle.addEventListener('click', () => {
+                    const embedUrl = getEmbedUrl(videoUrls[index]);
+                    videoPlayer.src = embedUrl;
+                    videoContainer.style.display = "flex"; // Affiche le conteneur vidéo
+                });
             });
         });
 
+        // Gère la fermeture de la vidéo
+        closeButton.addEventListener('click', () => {
+            videoPlayer.src = ""; // Arrête la lecture de la vidéo en vidant la source
+            videoContainer.style.display = "none"; // Cache le conteneur
+        });
+
+        // Gère le rendu de la scène et la position des cercles
         engine.runRenderLoop(() => {
             scene.render();
             circleMap.forEach((circle, mesh) => {
