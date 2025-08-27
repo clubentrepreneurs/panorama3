@@ -135,9 +135,7 @@
         }
 
         const glbFiles = ["1.glb", "2.glb", "3.glb", "4.glb"];
-        
-        // Nous n'avons plus besoin du tableau glbPositions
-        
+
         const videoUrls = [
             "https://www.youtube.com/watch?v=lUU1G-6klpI",
             "https://www.youtube.com/watch?v=SWIDVGO3Gg0",
@@ -145,19 +143,34 @@
             "https://www.youtube.com/watch?v=T6CI_hIbJIA"
         ];
         
+        // --- C'EST ICI QUE VOUS MODIFIEZ LES ESPACEMENTS ---
+        // Définissez un angle pour chaque GLB, en radians (360° = 2 * Math.PI)
+        const customAngles = [
+            0.5,           // Angle du 1er GLB (environ 28.6°)
+            2,             // Angle du 2ème GLB (environ 114.6°)
+            2.5,           // Angle du 3ème GLB (environ 143.2°)
+            4              // Angle du 4ème GLB (environ 229.2°)
+        ];
+
+        // Vous pouvez aussi utiliser Math.PI pour plus de précision
+        // const customAngles = [
+        //    0,             // 0°
+        //    Math.PI / 2,   // 90°
+        //    Math.PI,       // 180°
+        //    (3 * Math.PI) / 2  // 270°
+        // ];
+
+        const radius = 400; // La distance des modèles par rapport au centre reste la même pour tous
+
         const videoContainer = document.getElementById("video-container");
         const videoPlayer = document.getElementById("video-player");
         const closeButton = document.getElementById("close-button");
-        
+
         function getEmbedUrl(url) {
             const videoId = url.split('v=')[1];
             return `https://www.youtube.com/embed/${videoId}`;
         }
-        
-        // Paramètres de positionnement
-        const radius = 600; // Distance des modèles par rapport au centre
-        const initialAngle = Math.PI / 2; // Angle initial (90°)
-        
+
         glbFiles.forEach((file, index) => {
             BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
                 const realMeshes = meshes.filter(m => m.getTotalVertices() > 0);
@@ -165,23 +178,17 @@
 
                 const mesh = realMeshes[0];
                 mesh.scaling = new BABYLON.Vector3(20, 20, 20);
-                
-                // --- NOUVEAUTÉ ---
-                // 1. Créer un nœud de transformation (pivot) pour chaque mesh
+
                 const pivot = new BABYLON.TransformNode("pivot_" + index, scene);
-                // 2. Positionner le pivot par rapport au centre
                 pivot.position.z = radius;
                 
-                // 3. Calculer l'angle de rotation pour ce mesh
-                const angle = initialAngle + (index * 2 * Math.PI / glbFiles.length);
-                
-                // 4. Appliquer la rotation au pivot
-                pivot.rotation.y = angle;
-                
-                // 5. Attacher le mesh au pivot
+                // On utilise l'angle du tableau personnalisé
+                if (customAngles[index] !== undefined) {
+                    pivot.rotation.y = customAngles[index];
+                }
+
                 mesh.parent = pivot;
-                // Le mesh est désormais au même endroit que le pivot, mais sa position est relative à celui-ci (0,0,0)
-                
+
                 const circle = createCircle(index + 1);
                 circleMap.set(mesh, circle);
 
