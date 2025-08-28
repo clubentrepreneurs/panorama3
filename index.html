@@ -120,13 +120,8 @@
         // Lumière
         new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-        // === Fond panoramique ===
-        const dome = new BABYLON.PhotoDome(
-            "panorama",
-            "test3.png",
-            { resolution: 32, size: 1000 },
-            scene
-        );
+        // === Fond panoramique (retiré) ===
+        // Le code pour le PhotoDome a été retiré
 
         // Map mesh ↔ cercle HTML
         const circleMap = new Map();
