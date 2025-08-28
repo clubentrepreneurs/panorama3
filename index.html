@@ -10,13 +10,17 @@
             overflow: hidden;
             height: 100%;
             touch-action: none;
-            background: black;
+
+            /* === Fond responsive net === */
+            background: url("backgroundstatique.png") no-repeat center center fixed;
+            background-size: cover;
         }
         #renderCanvas {
             width: 100%;
             height: 100%;
             display: block;
             touch-action: none;
+            background-color: transparent; /* IMPORTANT pour laisser voir le fond */
         }
         
         /* === Cercles animés === */
@@ -113,15 +117,10 @@
         // === Lumière ===
         new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0,1,0), scene);
 
-        // === Fond fixe comme papier peint ===
-        const backgroundLayer = new BABYLON.Layer("back", "backgroundstatique.png", scene, true);
-        backgroundLayer.isBackground = true;
-
         // === PhotoDome avec transparence ===
         const dome = new BABYLON.PhotoDome("panorama", "test5.png", { resolution: 32, size: 1000 }, scene);
         dome.imageMode = BABYLON.PhotoDome.MODE_MONOSCOPIC;
 
-        // Récupération du matériau pour activer l'alpha
         const domeMat = dome.mesh.material;
         domeMat.diffuseTexture.hasAlpha = true;
         domeMat.useAlphaFromDiffuseTexture = true;
@@ -129,7 +128,7 @@
         domeMat.backFaceCulling = false;
         domeMat.needDepthPrePass = true;
 
-        // === Map mesh ↔ cercle HTML ===
+        // === Cercles + GLB ===
         const circleMap = new Map();
         function createCircle(id) {
             const container = document.createElement("div");
