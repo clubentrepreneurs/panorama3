@@ -9,7 +9,6 @@
             margin: 0;
             overflow: hidden;
             height: 100%;
-            /* Le fond est maintenant géré par Babylon.js */
             touch-action: none;
         }
         #renderCanvas {
@@ -18,7 +17,7 @@
             display: block;
             touch-action: none;
         }
-
+        
         /* === Cercles animés === */
         .circleContainer {
             position: absolute;
@@ -68,7 +67,7 @@
                 opacity: 0;
             }
         }
-
+        
         /* === Vidéo responsive en demi-écran === */
         #videoContainer {
             position: absolute;
@@ -115,12 +114,8 @@
         // NOUVEAU: Création d'un fond de scène statique avec votre image
         const backgroundMaterial = new BABYLON.BackgroundMaterial("backgroundMaterial", scene);
         backgroundMaterial.diffuseTexture = new BABYLON.Texture("backgroundstatique.png", scene);
-        backgroundMaterial.diffuseTexture.has  = true; // Permet de préserver le ratio de l'image
-        scene.createDefaultCameraOrLight(true, true, true);
-        scene.ambientColor = new BABYLON.Color3(1, 1, 1);
-        scene.actionManager = new BABYLON.ActionManager(scene);
-
-        // Ancien code retiré : scene.clearColor = new BABYLON.Color4(0, 0, 0, 0);
+        backgroundMaterial.diffuseTexture.hasAlpha = true; // S'assure que le PNG avec canal alpha est géré correctement
+        scene.backgroundMaterial = backgroundMaterial; // LIGNE AJOUTÉE
 
         // Caméra
         const camera = new BABYLON.ArcRotateCamera("cam", Math.PI / 2, Math.PI / 2.5, 300, new BABYLON.Vector3(0, 0, 0), scene);
@@ -136,7 +131,7 @@
             { resolution: 32, size: 1000 },
             scene
         );
-        
+
         // Map mesh ↔ cercle HTML
         const circleMap = new Map();
 
