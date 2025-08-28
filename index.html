@@ -113,6 +113,9 @@
         const engine = new BABYLON.Engine(canvas, true);
         const scene = new BABYLON.Scene(engine);
 
+        // Ajout de cette ligne pour rendre le fond de la scène transparent
+        scene.clearColor = new BABYLON.Color4(0, 0, 0, 0);
+
         // Caméra
         const camera = new BABYLON.ArcRotateCamera("cam", Math.PI / 2, Math.PI / 2.5, 300, new BABYLON.Vector3(0, 0, 0), scene);
         camera.attachControl(canvas, true);
@@ -120,8 +123,13 @@
         // Lumière
         new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-        // === Fond panoramique (retiré) ===
-        // Le code pour le PhotoDome a été retiré
+        // === Fond panoramique ===
+        const dome = new BABYLON.PhotoDome(
+            "panorama",
+            "test2.png",
+            { resolution: 32, size: 1000 },
+            scene
+        );
 
         // Map mesh ↔ cercle HTML
         const circleMap = new Map();
