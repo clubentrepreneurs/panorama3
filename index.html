@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>GLB + cercles + panorama (responsive vidéos)</title>
+  <title>GLB + cercles + panorama + background statique</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <style>
     html, body {
@@ -120,7 +120,17 @@
     // Lumière
     new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-    // === Fond panoramique ===
+    // === Arrière-plan statique (derrière tout) ===
+    const staticBackground = new BABYLON.PhotoDome(
+      "backgroundStatique",
+      "backgroundstatique.png",
+      { resolution: 32, size: 2000 }, // plus grand pour rester derrière
+      scene
+    );
+    staticBackground.mesh.isPickable = false;
+    staticBackground.infiniteDistance = true;
+
+    // === Fond panoramique principal ===
     const dome = new BABYLON.PhotoDome(
       "panorama",
       "test2.png",
