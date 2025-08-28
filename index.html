@@ -9,8 +9,7 @@
             margin: 0;
             overflow: hidden;
             height: 100%;
-            background: url('backgroundstatique.png') no-repeat center center fixed; /* Votre fond statique */
-            background-size: cover;
+            /* Le fond est maintenant géré par Babylon.js */
             touch-action: none;
         }
         #renderCanvas {
@@ -18,7 +17,6 @@
             height: 100%;
             display: block;
             touch-action: none;
-            background-color: transparent; /* Assurez-vous que le canvas HTML lui-même est transparent */
         }
 
         /* === Cercles animés === */
@@ -111,12 +109,18 @@
     <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
     <script>
         const canvas = document.getElementById("renderCanvas");
-        // MODIFICATION CLÉ ICI : AJOUT DE { alpha: true }
-        const engine = new BABYLON.Engine(canvas, true, { alpha: true });
+        const engine = new BABYLON.Engine(canvas, true);
         const scene = new BABYLON.Scene(engine);
 
-        // Cette ligne est déjà correcte pour rendre la scène transparente
-        scene.clearColor = new BABYLON.Color4(0, 0, 0, 0);
+        // NOUVEAU: Création d'un fond de scène statique avec votre image
+        const backgroundMaterial = new BABYLON.BackgroundMaterial("backgroundMaterial", scene);
+        backgroundMaterial.diffuseTexture = new BABYLON.Texture("backgroundstatique.png", scene);
+        backgroundMaterial.diffuseTexture.has  = true; // Permet de préserver le ratio de l'image
+        scene.createDefaultCameraOrLight(true, true, true);
+        scene.ambientColor = new BABYLON.Color3(1, 1, 1);
+        scene.actionManager = new BABYLON.ActionManager(scene);
+
+        // Ancien code retiré : scene.clearColor = new BABYLON.Color4(0, 0, 0, 0);
 
         // Caméra
         const camera = new BABYLON.ArcRotateCamera("cam", Math.PI / 2, Math.PI / 2.5, 300, new BABYLON.Vector3(0, 0, 0), scene);
@@ -125,15 +129,14 @@
         // Lumière
         new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-        // === Fond panoramique ===
-        // Vous n'avez pas besoin de useAlpha ici si le moteur est configuré avec alpha:true
+        // === Fond panoramique (le dôme transparent) ===
         const dome = new BABYLON.PhotoDome(
             "panorama",
             "test5.png",
-            { resolution: 32, size: 1000 }, // useAlpha n'est pas nécessaire si l'image est un PNG avec alpha et que le moteur a alpha:true
+            { resolution: 32, size: 1000 },
             scene
         );
-
+        
         // Map mesh ↔ cercle HTML
         const circleMap = new Map();
 
