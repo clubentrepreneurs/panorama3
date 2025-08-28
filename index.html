@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>GLB + cercles + panorama (responsive vidéos)</title>
+  <title>GLB + cercles + panorama (alpha + background)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <style>
     html, body {
@@ -10,6 +10,7 @@
       overflow: hidden;
       height: 100%;
       touch-action: none;
+      background: black;
     }
     #renderCanvas {
       width: 100%;
@@ -17,7 +18,6 @@
       display: block;
       touch-action: none;
     }
-
     /* === Cercles animés === */
     .circleContainer {
       position: absolute;
@@ -61,7 +61,6 @@
       0% { transform: scale(0); opacity: 0.7; }
       100% { transform: scale(1.5); opacity: 0; }
     }
-
     /* === Vidéo responsive en demi-écran === */
     #videoContainer {
       position: absolute;
@@ -102,37 +101,43 @@
   <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
   <script>
     const canvas = document.getElementById("renderCanvas");
-    const engine = new BABYLON.Engine(canvas, true, { alpha: true });
+    const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
     const scene = new BABYLON.Scene(engine);
-    scene.clearColor = new BABYLON.Color4(0, 0, 0, 0);
 
-    // Caméra
+    // === Caméra ===
     const camera = new BABYLON.ArcRotateCamera("cam", Math.PI/2, Math.PI/2.5, 300, new BABYLON.Vector3(0,0,0), scene);
     camera.attachControl(canvas, true);
 
-    // Lumière
-    new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+    // === Lumière ===
+    new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0,1,0), scene);
 
-    // === 1. BACKGROUND STATIQUE SUR UNE BOÎTE GÉANTE ===
+    // === Fond statique ===
     const backgroundMaterial = new BABYLON.BackgroundMaterial("bgMat", scene);
     backgroundMaterial.diffuseTexture = new BABYLON.Texture("backgroundstatique.png", scene);
+    backgroundMaterial.diffuseTexture.hasAlpha = false;
     backgroundMaterial.backFaceCulling = false;
-    const backgroundBox = BABYLON.MeshBuilder.CreateBox("backgroundBox", { size: 2000 }, scene);
-    backgroundBox.material = backgroundMaterial;
-    backgroundBox.infiniteDistance = true;
 
-    // === 2. TEST5 EN PHOTODOME AVEC TRANSPARENCE ===
+    const backgroundSphere = BABYLON.MeshBuilder.CreateSphere("backgroundSphere", { diameter: 5000 }, scene);
+    backgroundSphere.material = backgroundMaterial;
+    backgroundSphere.infiniteDistance = true;
+
+    // === Dôme transparent test5.png ===
     const dome = new BABYLON.PhotoDome(
       "panorama",
       "test5.png",
       { resolution: 32, size: 1000 },
       scene
     );
-    dome.mesh.material.alphaMode = BABYLON.Engine.ALPHA_COMBINE;
-    dome.mesh.material.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
-    dome.mesh.material.needDepthPrePass = true;
 
-    // === MAP mesh ↔ cercle HTML ===
+    // Forcer la transparence
+    const domeMat = dome.mesh.material;
+    domeMat.diffuseTexture.hasAlpha = true;
+    domeMat.useAlphaFromDiffuseTexture = true;
+    domeMat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+    domeMat.backFaceCulling = false;
+    domeMat.needDepthPrePass = true;
+
+    // === Cercles + GLB ===
     const circleMap = new Map();
     function createCircle(id) {
       const container = document.createElement("div");
@@ -143,7 +148,6 @@
       return container;
     }
 
-    // === GLB + vidéos ===
     const glbFiles = ["1.glb", "2.glb", "3.glb", "4.glb"];
     const videoUrls = [
       "https://www.youtube.com/watch?v=lUU1G-6klpI",
@@ -172,7 +176,6 @@
       BABYLON.SceneLoader.ImportMesh("", "./", file, scene, function(meshes) {
         const realMeshes = meshes.filter(m => m.getTotalVertices() > 0);
         if (realMeshes.length === 0) return;
-
         const mesh = realMeshes[0];
         mesh.scaling = new BABYLON.Vector3(20, 20, 20);
 
@@ -201,7 +204,6 @@
       camera.attachControl(canvas, true);
     });
 
-    // === LOOP ===
     engine.runRenderLoop(() => {
       scene.render();
       circleMap.forEach((circle, mesh) => {
@@ -224,9 +226,7 @@
       });
     });
 
-    window.addEventListener("resize", () => {
-      engine.resize();
-    });
+    window.addEventListener("resize", () => { engine.resize(); });
   </script>
 </body>
 </html>
