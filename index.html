@@ -20,7 +20,7 @@
             height: 100%;
             display: block;
             touch-action: none;
-            background-color: transparent; /* IMPORTANT pour laisser voir le fond */
+            background-color: transparent !important; /* laisser voir le fond */
         }
         
         /* === Cercles animés === */
@@ -67,7 +67,7 @@
             100% { transform: scale(1.5); opacity: 0; }
         }
         
-        /* === Vidéo responsive en demi-écran === */
+        /* === Vidéo responsive === */
         #videoContainer {
             position: absolute;
             top: 50%; left: 50%;
@@ -110,6 +110,9 @@
         const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, alpha: true });
         const scene = new BABYLON.Scene(engine);
 
+        // Fond transparent pour voir backgroundstatique.png (CSS)
+        scene.clearColor = new BABYLON.Color4(0, 0, 0, 0);
+
         // === Caméra ===
         const camera = new BABYLON.ArcRotateCamera("cam", Math.PI/2, Math.PI/2.5, 300, new BABYLON.Vector3(0,0,0), scene);
         camera.attachControl(canvas, true);
@@ -117,7 +120,7 @@
         // === Lumière ===
         new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0,1,0), scene);
 
-        // === PhotoDome avec transparence ===
+        // === Dôme transparent ===
         const dome = new BABYLON.PhotoDome("panorama", "test5.png", { resolution: 32, size: 1000 }, scene);
         dome.imageMode = BABYLON.PhotoDome.MODE_MONOSCOPIC;
 
