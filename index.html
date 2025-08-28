@@ -138,6 +138,11 @@
       scene
     );
 
+    // Active la transparence
+dome.material.alpha = 1;            // opacité globale (1 = opaque, 0 = invisible)
+dome.material.needAlphaBlending = true; 
+dome.material.diffuseTexture.hasAlpha = true;
+
     // Map mesh ↔ cercle HTML
     const circleMap = new Map();
 
